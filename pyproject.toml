@@ -13,6 +13,11 @@ dependencies = [
   "mcp[cli]>=1.17.0",
 ]
 
+[project.optional-dependencies]
+graph = [
+  "graphifyy>=0.4.19",
+]
+
 [project.scripts]
 chef = "chef.cli:main"
 chef-knowledge-mcp = "chef.mcp.knowledge:main"

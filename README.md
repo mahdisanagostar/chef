@@ -19,10 +19,12 @@ cd chef
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-pip install graphifyy
+pip install -e '.[graph]'
 chef init --project . --host both --vault new
 chef verify --project .
 ```
+
+`graphifyy` installs the `graphify` CLI used by `chef graph-refresh`.
 
 ## Host Install
 
@@ -42,6 +44,12 @@ Both:
 
 ```bash
 chef install --host both --project .
+```
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
 ```
 
 ## Core Rules

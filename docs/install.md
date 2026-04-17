@@ -16,8 +16,10 @@ cd chef
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-pip install graphifyy
+pip install -e '.[graph]'
 ```
+
+`graphifyy` provides the `graphify` binary used by `chef graph-refresh`.
 
 ## Project Bootstrap
 
@@ -67,3 +69,9 @@ CHEF ships three MCP entry points after install:
 - `chef-knowledge-mcp`
 - `chef-review-mcp`
 - `chef-security-mcp`
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```

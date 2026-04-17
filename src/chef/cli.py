@@ -20,24 +20,31 @@ def write_file(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def write_file_if_missing(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        return
+    path.write_text(content, encoding="utf-8")
+
+
 def read_template(*parts: str) -> str:
     return (TEMPLATES.joinpath(*parts)).read_text(encoding="utf-8")
 
 
 def ensure_vault(vault_path: Path) -> None:
-    write_file(vault_path / "Home" / "Home.md", read_template("vault", "Home", "Home.md"))
-    write_file(vault_path / "Memory" / "Memory.md", read_template("vault", "Memory", "Memory.md"))
-    write_file(vault_path / "Graphify" / "index.md", read_template("vault", "Graphify", "index.md"))
+    write_file_if_missing(vault_path / "Home" / "Home.md", read_template("vault", "Home", "Home.md"))
+    write_file_if_missing(vault_path / "Memory" / "Memory.md", read_template("vault", "Memory", "Memory.md"))
+    write_file_if_missing(vault_path / "Graphify" / "index.md", read_template("vault", "Graphify", "index.md"))
     (vault_path / "Graphify" / "graphify-out").mkdir(parents=True, exist_ok=True)
     ensure_graph_placeholders(vault_path)
 
 
 def ensure_graph_placeholders(vault_path: Path) -> None:
-    write_file(
+    write_file_if_missing(
         vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md",
         "# Graph Wiki Index\n\nGraphify output appears here after refresh.\n",
     )
-    write_file(
+    write_file_if_missing(
         vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md",
         "# Graph Report\n\nGraphify output appears here after refresh.\n",
     )
@@ -80,31 +87,38 @@ def ensure_graphify_compat(project: Path, vault_path: Path) -> None:
 
 def ensure_project_files(project: Path, host: str) -> None:
     if host in {"claude", "both"}:
-        write_file(project / "CLAUDE.md", read_template("project", "CLAUDE.md"))
+        write_file_if_missing(project / "CLAUDE.md", read_template("project", "CLAUDE.md"))
     if host in {"codex", "both"}:
-        write_file(project / "AGENTS.md", read_template("project", "AGENTS.md"))
-        write_file(project / ".codex" / "config.toml", read_template("project", "codex.config.toml"))
+        write_file_if_missing(project / "AGENTS.md", read_template("project", "AGENTS.md"))
+        write_file_if_missing(project / ".codex" / "config.toml", read_template("project", "codex.config.toml"))
+
+
+def manifest_path_value(project: Path, target: Path) -> str:
+    project = project.resolve()
+    target = target.expanduser().resolve()
+    try:
+        return str(target.relative_to(project))
+    except ValueError:
+        return str(target)
 
 
 def write_manifest(project: Path, host: str, vault_path: Path) -> None:
     manifest = {
         "project": "chef/",
         "host": host,
-        "vault": "knowledge-vault",
+        "vault": manifest_path_value(project, vault_path),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "graph_index": "knowledge-vault/Graphify/graphify-out/wiki/index.md",
-        "graph_report": "knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md",
+        "graph_index": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md"),
+        "graph_report": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"),
     }
     write_file(project / ".chef" / "chef.json", json.dumps(manifest, indent=2) + "\n")
 
 
 def resolve_project_path(project: Path, value: str) -> Path:
-    path = Path(value)
+    path = Path(value).expanduser()
     if path.is_absolute():
-        return path
-    if value == "knowledge-vault":
-        return project / value
-    return project / value
+        return path.resolve()
+    return (project / path).resolve()
 
 
 def read_pack_registry() -> dict[str, dict[str, object]]:
@@ -140,6 +154,9 @@ def cmd_init(args: argparse.Namespace) -> int:
         print("Existing vault mode requires --vault-path.", file=sys.stderr)
         return 1
     vault_path = Path(args.vault_path).expanduser().resolve() if args.vault_path else project / "knowledge-vault"
+    if args.vault == "existing" and not vault_path.exists():
+        print(f"Existing vault path not found: {vault_path}", file=sys.stderr)
+        return 1
     ensure_vault(vault_path)
     ensure_graphify_compat(project, vault_path)
     ensure_project_files(project, args.host)
@@ -264,10 +281,11 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print("Missing .chef/chef.json", file=sys.stderr)
         return 1
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    host = manifest.get("host", "both")
     checks = {
-        "CLAUDE.md": (project / "CLAUDE.md").exists(),
-        "AGENTS.md": (project / "AGENTS.md").exists(),
-        ".codex/config.toml": (project / ".codex" / "config.toml").exists(),
+        "CLAUDE.md": host not in {"claude", "both"} or (project / "CLAUDE.md").exists(),
+        "AGENTS.md": host not in {"codex", "both"} or (project / "AGENTS.md").exists(),
+        ".codex/config.toml": host not in {"codex", "both"} or (project / ".codex" / "config.toml").exists(),
         "vault_home": (resolve_project_path(project, manifest["vault"]) / "Home" / "Home.md").exists(),
         "vault_memory": (resolve_project_path(project, manifest["vault"]) / "Memory" / "Memory.md").exists(),
         "graph_index_page": (resolve_project_path(project, manifest["vault"]) / "Graphify" / "index.md").exists(),

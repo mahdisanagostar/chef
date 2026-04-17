@@ -1,12 +1,12 @@
 # Graph Report - /Users/mahdi/Desktop/git/chef  (2026-04-17)
 
 ## Corpus Check
-- 7 files · ~3,093 words
+- 8 files · ~4,037 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 55 nodes · 117 edges · 9 communities detected
-- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 23 edges (avg confidence: 0.8)
+- 64 nodes · 132 edges · 14 communities detected
+- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 25 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -19,18 +19,23 @@
 - [[_COMMUNITY_Community 6|Community 6]]
 - [[_COMMUNITY_Community 7|Community 7]]
 - [[_COMMUNITY_Community 8|Community 8]]
+- [[_COMMUNITY_Community 9|Community 9]]
+- [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `read_text()` - 11 edges
+1. `read_text()` - 13 edges
 2. `cmd_graph_refresh()` - 9 edges
 3. `detect_project()` - 8 edges
 4. `cmd_init()` - 8 edges
 5. `read_enabled_packs()` - 7 edges
 6. `graph_index_path()` - 7 edges
 7. `graph_report_path()` - 7 edges
-8. `write_file()` - 6 edges
-9. `ensure_vault()` - 6 edges
-10. `graph_dir()` - 6 edges
+8. `ensure_vault()` - 6 edges
+9. `graph_dir()` - 6 edges
+10. `run_command()` - 5 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `read_template()` --calls--> `read_text()`  [INFERRED]
@@ -47,55 +52,75 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.24
-Nodes (6): graph_index_path(), graph_report_path(), review_context(), review_sources(), security_context(), security_review_order()
+Cohesion: 0.48
+Nodes (2): ChefCliTests, run_command()
 
 ### Community 1 - "Community 1"
-Cohesion: 0.27
-Nodes (9): graph_dir(), read_text(), resolve_project(), vault_dir(), list_graph_pages(), read_graph_index(), read_graph_page(), read_graph_report() (+1 more)
+Cohesion: 0.33
+Nodes (5): graph_dir(), list_graph_pages(), read_graph_page(), read_graph_report(), vault_summary()
 
 ### Community 2 - "Community 2"
-Cohesion: 0.48
-Nodes (7): cmd_init(), cmd_pack_enable(), cmd_pack_status(), pack_state_path(), read_enabled_packs(), read_pack_registry(), write_enabled_packs()
+Cohesion: 0.53
+Nodes (5): build_parser(), cmd_install(), install_claude(), install_codex(), main()
 
 ### Community 3 - "Community 3"
-Cohesion: 0.47
-Nodes (6): ensure_graph_placeholders(), ensure_project_files(), ensure_vault(), read_template(), write_file(), write_manifest()
+Cohesion: 0.4
+Nodes (6): cmd_init(), manifest_path_value(), pack_state_path(), write_enabled_packs(), write_file(), write_manifest()
 
 ### Community 4 - "Community 4"
 Cohesion: 0.47
 Nodes (6): cmd_graph_refresh(), ensure_graphify_compat(), merge_tree(), resolve_graphify_binary(), run_graphify_command(), sync_graphify_outputs()
 
 ### Community 5 - "Community 5"
-Cohesion: 0.53
-Nodes (5): build_parser(), cmd_install(), install_claude(), install_codex(), main()
+Cohesion: 0.4
+Nodes (3): graph_report_path(), security_context(), security_review_order()
 
 ### Community 6 - "Community 6"
+Cohesion: 0.6
+Nodes (5): ensure_graph_placeholders(), ensure_project_files(), ensure_vault(), read_template(), write_file_if_missing()
+
+### Community 7 - "Community 7"
+Cohesion: 0.83
+Nodes (4): cmd_pack_enable(), cmd_pack_status(), read_enabled_packs(), read_pack_registry()
+
+### Community 8 - "Community 8"
 Cohesion: 0.5
 Nodes (4): cmd_publish_github(), cmd_verify(), detect_project(), resolve_project_path()
 
-### Community 7 - "Community 7"
+### Community 9 - "Community 9"
+Cohesion: 0.67
+Nodes (4): graph_index_path(), read_text(), read_graph_index(), review_context()
+
+### Community 10 - "Community 10"
+Cohesion: 0.5
+Nodes (1): review_sources()
+
+### Community 11 - "Community 11"
+Cohesion: 1.0
+Nodes (2): resolve_project(), vault_dir()
+
+### Community 12 - "Community 12"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 8 - "Community 8"
+### Community 13 - "Community 13"
 Cohesion: 1.0
 Nodes (0): 
 
 ## Knowledge Gaps
-- **Thin community `Community 7`** (1 nodes): `__init__.py`
+- **Thin community `Community 12`** (1 nodes): `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 8`** (1 nodes): `__init__.py`
+- **Thin community `Community 13`** (1 nodes): `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `read_text()` connect `Community 1` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 6`?**
-  _High betweenness centrality (0.495) - this node is a cross-community bridge._
-- **Why does `cmd_graph_refresh()` connect `Community 4` to `Community 1`, `Community 3`, `Community 5`, `Community 6`?**
-  _High betweenness centrality (0.146) - this node is a cross-community bridge._
-- **Why does `security_context()` connect `Community 0` to `Community 1`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
-- **Are the 10 inferred relationships involving `read_text()` (e.g. with `read_template()` and `read_pack_registry()`) actually correct?**
-  _`read_text()` has 10 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `read_text()` connect `Community 9` to `Community 0`, `Community 1`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 11`?**
+  _High betweenness centrality (0.580) - this node is a cross-community bridge._
+- **Why does `cmd_graph_refresh()` connect `Community 4` to `Community 8`, `Community 9`, `Community 2`, `Community 6`?**
+  _High betweenness centrality (0.143) - this node is a cross-community bridge._
+- **Why does `security_context()` connect `Community 5` to `Community 9`?**
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Are the 12 inferred relationships involving `read_text()` (e.g. with `.test_existing_vault_content_survives_init()` and `.test_graph_refresh_dry_run_preserves_existing_graph_outputs()`) actually correct?**
+  _`read_text()` has 12 INFERRED edges - model-reasoned connections that need verification._
