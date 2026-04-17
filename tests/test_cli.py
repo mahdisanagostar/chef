@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -15,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import chef.cli as chef_cli
+from chef import graphify as graphify_ops
+from chef import hosts as host_install
+from chef import packs as pack_ops
 
 
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
@@ -128,8 +132,8 @@ class ChefCliTests(unittest.TestCase):
             )
             legacy_file.write_text(json.dumps({"legacy": {"enabled_by_default": True, "items": ["old"]}}), encoding="utf-8")
 
-            with patch.object(chef_cli, "PACKS_DIR", packs_dir), patch.object(chef_cli, "PACKS_FILE", legacy_file):
-                registry = chef_cli.read_pack_registry()
+            with patch.object(pack_ops, "PACKS_DIR", packs_dir), patch.object(pack_ops, "PACKS_FILE", legacy_file):
+                registry = pack_ops.read_pack_registry()
 
             self.assertEqual(
                 registry,
@@ -138,6 +142,70 @@ class ChefCliTests(unittest.TestCase):
                     "beta": {"enabled_by_default": False, "items": ["secure-code-guardian"]},
                 },
             )
+
+    def test_install_codex_replaces_existing_skill_copy(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp) / "root"
+            home = Path(tmp) / "home"
+            project = Path(tmp) / "project"
+            skill_src = root / "adapters" / "codex" / "skills" / "skill-a"
+            plugin_src = root / "adapters" / "codex" / ".codex-plugin"
+            skill_src.mkdir(parents=True)
+            plugin_src.mkdir(parents=True)
+            project.mkdir(parents=True)
+            (skill_src / "SKILL.md").write_text("# Skill A\n", encoding="utf-8")
+            (plugin_src / "plugin.json").write_text('{"name":"chef"}\n', encoding="utf-8")
+
+            existing = home / ".codex" / "skills" / "skill-a"
+            existing.mkdir(parents=True)
+            (existing / "OLD.md").write_text("old\n", encoding="utf-8")
+
+            with patch.object(host_install, "ROOT", root), patch.object(host_install.Path, "home", return_value=home):
+                installed = host_install.install_codex(project)
+
+            self.assertIn(str(home / ".codex" / "skills" / "skill-a"), installed)
+            self.assertIn(str(project / ".codex-plugin"), installed)
+            self.assertTrue((home / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
+            self.assertFalse((home / ".codex" / "skills" / "skill-a" / "OLD.md").exists())
+            self.assertTrue((project / ".codex-plugin" / "plugin.json").exists())
+
+    def test_install_claude_copies_commands_and_plugin(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp) / "root"
+            home = Path(tmp) / "home"
+            project = Path(tmp) / "project"
+            commands_src = root / "adapters" / "claude" / "commands"
+            plugin_src = root / "adapters" / "claude" / ".claude-plugin"
+            commands_src.mkdir(parents=True)
+            plugin_src.mkdir(parents=True)
+            project.mkdir(parents=True)
+            (commands_src / "chef-pack-status.md").write_text("# status\n", encoding="utf-8")
+            (plugin_src / "plugin.json").write_text('{"name":"chef"}\n', encoding="utf-8")
+
+            with patch.object(host_install, "ROOT", root), patch.object(host_install.Path, "home", return_value=home):
+                installed = host_install.install_claude(project)
+
+            self.assertIn(str(home / ".claude" / "commands" / "chef"), installed)
+            self.assertIn(str(home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"), installed)
+            self.assertTrue((home / ".claude" / "commands" / "chef" / "chef-pack-status.md").exists())
+            self.assertTrue((home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin" / "plugin.json").exists())
+
+    def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            local_graphify = project / ".venv" / "bin" / "graphify"
+            local_graphify.parent.mkdir(parents=True)
+            local_graphify.write_text("", encoding="utf-8")
+
+            with patch.object(shutil, "which", return_value="/usr/local/bin/graphify"):
+                binary = graphify_ops.resolve_graphify_binary(project)
+
+            self.assertEqual(binary, str(local_graphify))
+
+    def test_run_graphify_command_returns_127_when_binary_missing(self) -> None:
+        with TemporaryDirectory() as tmp:
+            code = graphify_ops.run_graphify_command(["definitely-missing-graphify-binary"], Path(tmp))
+            self.assertEqual(code, 127)
 
 
 if __name__ == "__main__":

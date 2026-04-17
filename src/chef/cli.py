@@ -1,157 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
-import os
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
-
-ROOT = Path(__file__).resolve().parents[2]
-TEMPLATES = ROOT / "templates"
-PACKS_DIR = ROOT / "packs"
-PACKS_FILE = ROOT / "core" / "packs.json"
-
-
-def write_file(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-
-
-def write_file_if_missing(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        return
-    path.write_text(content, encoding="utf-8")
-
-
-def read_template(*parts: str) -> str:
-    return (TEMPLATES.joinpath(*parts)).read_text(encoding="utf-8")
-
-
-def ensure_vault(vault_path: Path) -> None:
-    write_file_if_missing(vault_path / "Home" / "Home.md", read_template("vault", "Home", "Home.md"))
-    write_file_if_missing(vault_path / "Memory" / "Memory.md", read_template("vault", "Memory", "Memory.md"))
-    write_file_if_missing(vault_path / "Graphify" / "index.md", read_template("vault", "Graphify", "index.md"))
-    (vault_path / "Graphify" / "graphify-out").mkdir(parents=True, exist_ok=True)
-    ensure_graph_placeholders(vault_path)
-
-
-def ensure_graph_placeholders(vault_path: Path) -> None:
-    write_file_if_missing(
-        vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md",
-        "# Graph Wiki Index\n\nGraphify output appears here after refresh.\n",
-    )
-    write_file_if_missing(
-        vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md",
-        "# Graph Report\n\nGraphify output appears here after refresh.\n",
-    )
-
-
-def merge_tree(src: Path, dest: Path) -> None:
-    if not src.exists():
-        return
-    for path in src.rglob("*"):
-        relative = path.relative_to(src)
-        target = dest / relative
-        if path.is_dir():
-            target.mkdir(parents=True, exist_ok=True)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, target)
-
-
-def ensure_graphify_compat(project: Path, vault_path: Path) -> None:
-    target = vault_path / "Graphify" / "graphify-out"
-    compat = project / "graphify-out"
-
-    if compat.exists() and not compat.is_symlink():
-        merge_tree(compat, target)
-        shutil.rmtree(compat)
-
-    if compat.is_symlink():
-        try:
-            if compat.resolve() == target.resolve():
-                return
-        except FileNotFoundError:
-            compat.unlink()
-
-    if compat.exists():
-        return
-
-    rel_target = os.path.relpath(target, start=project)
-    compat.symlink_to(rel_target)
-
-
-def ensure_project_files(project: Path, host: str) -> None:
-    if host in {"claude", "both"}:
-        write_file_if_missing(project / "CLAUDE.md", read_template("project", "CLAUDE.md"))
-    if host in {"codex", "both"}:
-        write_file_if_missing(project / "AGENTS.md", read_template("project", "AGENTS.md"))
-        write_file_if_missing(project / ".codex" / "config.toml", read_template("project", "codex.config.toml"))
-
-
-def manifest_path_value(project: Path, target: Path) -> str:
-    project = project.resolve()
-    target = target.expanduser().resolve()
-    try:
-        return str(target.relative_to(project))
-    except ValueError:
-        return str(target)
-
-
-def write_manifest(project: Path, host: str, vault_path: Path) -> None:
-    manifest = {
-        "project": "chef/",
-        "host": host,
-        "vault": manifest_path_value(project, vault_path),
-        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "graph_index": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md"),
-        "graph_report": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"),
-    }
-    write_file(project / ".chef" / "chef.json", json.dumps(manifest, indent=2) + "\n")
-
-
-def resolve_project_path(project: Path, value: str) -> Path:
-    path = Path(value).expanduser()
-    if path.is_absolute():
-        return path.resolve()
-    return (project / path).resolve()
-
-
-def read_pack_registry() -> dict[str, dict[str, object]]:
-    registry: dict[str, dict[str, object]] = {}
-    for pack_file in sorted(PACKS_DIR.glob("*/pack.json")):
-        data = json.loads(pack_file.read_text(encoding="utf-8"))
-        name = data.get("name", pack_file.parent.name)
-        registry[name] = {
-            "enabled_by_default": bool(data.get("enabled_by_default", data.get("default", False))),
-            "items": list(data.get("items", data.get("tools", []))),
-        }
-    if registry:
-        return registry
-    return json.loads(PACKS_FILE.read_text(encoding="utf-8"))
-
-
-def pack_state_path(project: Path) -> Path:
-    return project / ".chef" / "enabled-packs.json"
-
-
-def read_enabled_packs(project: Path) -> dict[str, object]:
-    path = pack_state_path(project)
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-
-    registry = read_pack_registry()
-    defaults = sorted(name for name, meta in registry.items() if meta.get("enabled_by_default") or meta.get("default"))
-    return {"enabled": defaults}
-
-
-def write_enabled_packs(project: Path, state: dict[str, object]) -> None:
-    write_file(pack_state_path(project), json.dumps(state, indent=2) + "\n")
+from chef import graphify as graphify_ops
+from chef import hosts as host_install
+from chef import packs as pack_ops
+from chef import scaffold
 
 
 def detect_project(args: argparse.Namespace) -> Path:
@@ -168,90 +25,27 @@ def cmd_init(args: argparse.Namespace) -> int:
     if args.vault == "existing" and not vault_path.exists():
         print(f"Existing vault path not found: {vault_path}", file=sys.stderr)
         return 1
-    ensure_vault(vault_path)
-    ensure_graphify_compat(project, vault_path)
-    ensure_project_files(project, args.host)
-    write_manifest(project, args.host, vault_path)
-    write_enabled_packs(project, read_enabled_packs(project))
+    scaffold.ensure_vault(vault_path)
+    scaffold.ensure_graphify_compat(project, vault_path)
+    scaffold.ensure_project_files(project, args.host)
+    scaffold.write_manifest(project, args.host, vault_path)
+    pack_ops.write_enabled_packs(project, pack_ops.read_enabled_packs(project))
     print(f"Initialized CHEF project at {project}")
     print(f"Vault path: {vault_path}")
     return 0
-
-
-def install_claude(project: Path) -> list[str]:
-    home = Path.home()
-    command_target = home / ".claude" / "commands" / "chef"
-    command_target.mkdir(parents=True, exist_ok=True)
-    plugin_target = home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
-    plugin_target.mkdir(parents=True, exist_ok=True)
-    src = ROOT / "adapters" / "claude" / "commands"
-    for path in src.glob("*.md"):
-        shutil.copy2(path, command_target / path.name)
-    shutil.copy2(ROOT / "adapters" / "claude" / ".claude-plugin" / "plugin.json", plugin_target / "plugin.json")
-    return [str(command_target), str(plugin_target)]
-
-
-def install_codex(project: Path) -> list[str]:
-    home = Path.home()
-    target = home / ".codex" / "skills"
-    target.mkdir(parents=True, exist_ok=True)
-    src = ROOT / "adapters" / "codex" / "skills"
-    installed: list[str] = []
-    for skill_dir in src.iterdir():
-        if not skill_dir.is_dir():
-            continue
-        dest = target / skill_dir.name
-        if dest.exists():
-            shutil.rmtree(dest)
-        shutil.copytree(skill_dir, dest)
-        installed.append(str(dest))
-
-    plugin_src = ROOT / "adapters" / "codex" / ".codex-plugin"
-    plugin_dest = project / ".codex-plugin"
-    if plugin_dest.exists():
-        shutil.rmtree(plugin_dest)
-    shutil.copytree(plugin_src, plugin_dest)
-    installed.append(str(plugin_dest))
-    return installed
 
 
 def cmd_install(args: argparse.Namespace) -> int:
     project = detect_project(args)
     installed: list[str] = []
     if args.host in {"claude", "both"}:
-        installed.extend(install_claude(project))
+        installed.extend(host_install.install_claude(project))
     if args.host in {"codex", "both"}:
-        installed.extend(install_codex(project))
+        installed.extend(host_install.install_codex(project))
     print("Installed CHEF assets:")
     for path in installed:
         print(f"- {path}")
     return 0
-
-
-def run_graphify_command(command: list[str], cwd: Path) -> int:
-    try:
-        return subprocess.run(command, cwd=cwd, check=False).returncode
-    except FileNotFoundError:
-        return 127
-
-
-def resolve_graphify_binary(project: Path) -> str:
-    local = project / ".venv" / "bin" / "graphify"
-    if local.exists():
-        return str(local)
-    global_path = shutil.which("graphify")
-    if global_path:
-        return global_path
-    return "graphify"
-
-
-def sync_graphify_outputs(project: Path, vault_path: Path) -> None:
-    compat = project / "graphify-out"
-    target = vault_path / "Graphify" / "graphify-out"
-    ensure_graphify_compat(project, vault_path)
-    if compat.is_symlink():
-        return
-    merge_tree(compat, target)
 
 
 def cmd_graph_refresh(args: argparse.Namespace) -> int:
@@ -260,22 +54,22 @@ def cmd_graph_refresh(args: argparse.Namespace) -> int:
     if not manifest_path.exists():
         print("Missing .chef/chef.json. Run `chef init` first.", file=sys.stderr)
         return 1
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    vault_path = resolve_project_path(project, manifest["vault"])
-    ensure_vault(vault_path)
-    ensure_graphify_compat(project, vault_path)
-    graphify_bin = resolve_graphify_binary(project)
+    manifest = scaffold.load_manifest(project)
+    vault_path = scaffold.resolve_project_path(project, manifest["vault"])
+    scaffold.ensure_vault(vault_path)
+    scaffold.ensure_graphify_compat(project, vault_path)
+    graphify_bin = graphify_ops.resolve_graphify_binary(project)
     install_sequence = [[graphify_bin, args.host, "install"]]
     update_command = [graphify_bin, "update", "."]
     if args.execute:
         for command in install_sequence + [update_command]:
-            code = run_graphify_command(command, project)
+            code = graphify_ops.run_graphify_command(command, project)
             if code == 127:
                 print("Graphify not installed. CHEF kept scaffold only.", file=sys.stderr)
                 return 1
             if code != 0:
                 return code
-        sync_graphify_outputs(project, vault_path)
+        graphify_ops.sync_graphify_outputs(project, vault_path)
         print("Graphify commands executed.")
         return 0
     print("Graph refresh scaffold ready.")
@@ -291,17 +85,8 @@ def cmd_verify(args: argparse.Namespace) -> int:
     if not manifest_path.exists():
         print("Missing .chef/chef.json", file=sys.stderr)
         return 1
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    host = manifest.get("host", "both")
-    checks = {
-        "CLAUDE.md": host not in {"claude", "both"} or (project / "CLAUDE.md").exists(),
-        "AGENTS.md": host not in {"codex", "both"} or (project / "AGENTS.md").exists(),
-        ".codex/config.toml": host not in {"codex", "both"} or (project / ".codex" / "config.toml").exists(),
-        "vault_home": (resolve_project_path(project, manifest["vault"]) / "Home" / "Home.md").exists(),
-        "vault_memory": (resolve_project_path(project, manifest["vault"]) / "Memory" / "Memory.md").exists(),
-        "graph_index_page": (resolve_project_path(project, manifest["vault"]) / "Graphify" / "index.md").exists(),
-        "graph_output_dir": (resolve_project_path(project, manifest["vault"]) / "Graphify" / "graphify-out").exists(),
-    }
+    manifest = scaffold.load_manifest(project)
+    checks = scaffold.build_verify_checks(project, manifest)
     print(json.dumps(checks, indent=2))
     return 0 if all(checks.values()) else 1
 
@@ -322,23 +107,23 @@ def cmd_publish_github(args: argparse.Namespace) -> int:
 
 def cmd_pack_enable(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    registry = read_pack_registry()
-    state = read_enabled_packs(project)
+    registry = pack_ops.read_pack_registry()
+    state = pack_ops.read_enabled_packs(project)
     enabled = set(state.get("enabled", []))
     unknown = [pack for pack in args.pack if pack not in registry]
     if unknown:
         print(f"Unknown packs: {', '.join(unknown)}", file=sys.stderr)
         return 1
     enabled.update(args.pack)
-    write_enabled_packs(project, {"enabled": sorted(enabled)})
+    pack_ops.write_enabled_packs(project, {"enabled": sorted(enabled)})
     print(json.dumps({"enabled": sorted(enabled)}, indent=2))
     return 0
 
 
 def cmd_pack_status(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    registry = read_pack_registry()
-    state = read_enabled_packs(project)
+    registry = pack_ops.read_pack_registry()
+    state = pack_ops.read_enabled_packs(project)
     enabled = set(state.get("enabled", []))
     output = {
         "enabled": sorted(enabled),

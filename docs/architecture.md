@@ -11,6 +11,14 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `packs/` groups optional capability bundles and now acts as the canonical pack registry source.
 - `templates/` stores reusable vault and project scaffolding.
 
+## Python Modules
+
+- `src/chef/cli.py` keeps argument parsing and command dispatch.
+- `src/chef/scaffold.py` owns vault creation, compatibility links, manifests, and verification checks.
+- `src/chef/packs.py` owns pack registry and enabled-pack state.
+- `src/chef/hosts.py` owns host-specific install copy logic.
+- `src/chef/graphify.py` owns Graphify binary resolution and refresh execution helpers.
+
 ## Graph-First Protocol
 
 1. Query graph index first.

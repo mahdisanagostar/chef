@@ -1,12 +1,12 @@
 # Graph Report - /Users/mahdi/Desktop/git/chef  (2026-04-17)
 
 ## Corpus Check
-- 8 files · ~4,321 words
+- 13 files · ~4,771 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 66 nodes · 137 edges · 13 communities detected
-- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 27 edges (avg confidence: 0.8)
+- 78 nodes · 153 edges · 9 communities detected
+- Extraction: 63% EXTRACTED · 37% INFERRED · 0% AMBIGUOUS · INFERRED: 57 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -19,17 +19,13 @@
 - [[_COMMUNITY_Community 6|Community 6]]
 - [[_COMMUNITY_Community 7|Community 7]]
 - [[_COMMUNITY_Community 8|Community 8]]
-- [[_COMMUNITY_Community 9|Community 9]]
-- [[_COMMUNITY_Community 10|Community 10]]
-- [[_COMMUNITY_Community 11|Community 11]]
-- [[_COMMUNITY_Community 12|Community 12]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `read_text()` - 14 edges
-2. `cmd_graph_refresh()` - 9 edges
-3. `detect_project()` - 8 edges
-4. `cmd_init()` - 8 edges
-5. `ChefCliTests` - 7 edges
+1. `read_text()` - 15 edges
+2. `ChefCliTests` - 11 edges
+3. `cmd_graph_refresh()` - 10 edges
+4. `detect_project()` - 8 edges
+5. `cmd_init()` - 8 edges
 6. `read_enabled_packs()` - 7 edges
 7. `graph_index_path()` - 7 edges
 8. `graph_report_path()` - 7 edges
@@ -37,85 +33,75 @@
 10. `ensure_vault()` - 6 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `graph_dir()` --calls--> `list_graph_pages()`  [INFERRED]
-  /Users/mahdi/Desktop/git/chef/src/chef/mcp/common.py → /Users/mahdi/Desktop/git/chef/src/chef/mcp/knowledge.py
-- `read_template()` --calls--> `read_text()`  [INFERRED]
-  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/mcp/common.py
-- `read_pack_registry()` --calls--> `read_text()`  [INFERRED]
-  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/mcp/common.py
-- `read_enabled_packs()` --calls--> `read_text()`  [INFERRED]
-  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/mcp/common.py
-- `cmd_graph_refresh()` --calls--> `read_text()`  [INFERRED]
-  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/mcp/common.py
+- `cmd_init()` --calls--> `ensure_vault()`  [INFERRED]
+  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/scaffold.py
+- `cmd_init()` --calls--> `ensure_graphify_compat()`  [INFERRED]
+  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/scaffold.py
+- `cmd_init()` --calls--> `ensure_project_files()`  [INFERRED]
+  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/scaffold.py
+- `cmd_init()` --calls--> `write_manifest()`  [INFERRED]
+  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/scaffold.py
+- `cmd_graph_refresh()` --calls--> `load_manifest()`  [INFERRED]
+  /Users/mahdi/Desktop/git/chef/src/chef/cli.py → /Users/mahdi/Desktop/git/chef/src/chef/scaffold.py
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.36
-Nodes (2): ChefCliTests, run_command()
+Cohesion: 0.2
+Nodes (5): cmd_install(), install_claude(), install_codex(), ChefCliTests, run_command()
 
 ### Community 1 - "Community 1"
-Cohesion: 0.32
-Nodes (6): read_text(), list_graph_pages(), read_graph_index(), read_graph_page(), read_graph_report(), vault_summary()
+Cohesion: 0.23
+Nodes (11): cmd_verify(), graph_dir(), read_text(), resolve_project(), vault_dir(), list_graph_pages(), read_graph_index(), read_graph_page() (+3 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.4
-Nodes (6): cmd_init(), manifest_path_value(), pack_state_path(), write_enabled_packs(), write_file(), write_manifest()
+Cohesion: 0.33
+Nodes (11): build_parser(), cmd_init(), cmd_pack_enable(), cmd_pack_status(), cmd_publish_github(), detect_project(), main(), pack_state_path() (+3 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.53
-Nodes (5): build_parser(), cmd_install(), install_claude(), install_codex(), main()
+Cohesion: 0.32
+Nodes (11): build_manifest(), build_verify_checks(), ensure_graph_placeholders(), ensure_project_files(), ensure_vault(), manifest_path_value(), read_template(), resolve_project_path() (+3 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.47
-Nodes (6): cmd_graph_refresh(), ensure_graphify_compat(), merge_tree(), resolve_graphify_binary(), run_graphify_command(), sync_graphify_outputs()
+Cohesion: 0.24
+Nodes (6): graph_index_path(), graph_report_path(), review_context(), review_sources(), security_context(), security_review_order()
 
 ### Community 5 - "Community 5"
-Cohesion: 0.4
-Nodes (3): graph_report_path(), review_context(), review_sources()
+Cohesion: 0.33
+Nodes (6): cmd_graph_refresh(), resolve_graphify_binary(), run_graphify_command(), sync_graphify_outputs(), ensure_graphify_compat(), merge_tree()
 
 ### Community 6 - "Community 6"
-Cohesion: 0.4
-Nodes (3): graph_index_path(), security_context(), security_review_order()
-
-### Community 7 - "Community 7"
-Cohesion: 0.6
-Nodes (5): ensure_graph_placeholders(), ensure_project_files(), ensure_vault(), read_template(), write_file_if_missing()
-
-### Community 8 - "Community 8"
-Cohesion: 0.83
-Nodes (4): cmd_pack_enable(), cmd_pack_status(), read_enabled_packs(), read_pack_registry()
-
-### Community 9 - "Community 9"
-Cohesion: 0.5
-Nodes (4): cmd_publish_github(), cmd_verify(), detect_project(), resolve_project_path()
-
-### Community 10 - "Community 10"
-Cohesion: 0.83
-Nodes (3): graph_dir(), resolve_project(), vault_dir()
-
-### Community 11 - "Community 11"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 12 - "Community 12"
+### Community 7 - "Community 7"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 8 - "Community 8"
 Cohesion: 1.0
 Nodes (0): 
 
 ## Knowledge Gaps
-- **Thin community `Community 11`** (1 nodes): `__init__.py`
+- **Thin community `Community 6`** (1 nodes): `paths.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 12`** (1 nodes): `__init__.py`
+- **Thin community `Community 7`** (1 nodes): `__init__.py`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 8`** (1 nodes): `__init__.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `read_text()` connect `Community 1` to `Community 0`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`?**
-  _High betweenness centrality (0.546) - this node is a cross-community bridge._
-- **Why does `cmd_graph_refresh()` connect `Community 4` to `Community 9`, `Community 3`, `Community 1`, `Community 7`?**
-  _High betweenness centrality (0.131) - this node is a cross-community bridge._
-- **Why does `read_pack_registry()` connect `Community 8` to `Community 0`, `Community 1`, `Community 3`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
-- **Are the 13 inferred relationships involving `read_text()` (e.g. with `.test_existing_vault_content_survives_init()` and `.test_graph_refresh_dry_run_preserves_existing_graph_outputs()`) actually correct?**
-  _`read_text()` has 13 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `read_text()` connect `Community 1` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 5`?**
+  _High betweenness centrality (0.523) - this node is a cross-community bridge._
+- **Why does `cmd_graph_refresh()` connect `Community 5` to `Community 1`, `Community 2`, `Community 3`?**
+  _High betweenness centrality (0.195) - this node is a cross-community bridge._
+- **Why does `ChefCliTests` connect `Community 0` to `Community 5`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
+- **Are the 14 inferred relationships involving `read_text()` (e.g. with `.test_existing_vault_content_survives_init()` and `.test_graph_refresh_dry_run_preserves_existing_graph_outputs()`) actually correct?**
+  _`read_text()` has 14 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 8 inferred relationships involving `cmd_graph_refresh()` (e.g. with `load_manifest()` and `resolve_project_path()`) actually correct?**
+  _`cmd_graph_refresh()` has 8 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 6 inferred relationships involving `cmd_init()` (e.g. with `ensure_vault()` and `ensure_graphify_compat()`) actually correct?**
+  _`cmd_init()` has 6 INFERRED edges - model-reasoned connections that need verification._
