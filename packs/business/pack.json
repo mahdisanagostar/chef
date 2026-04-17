@@ -1,10 +1,10 @@
 {
   "name": "business",
-  "default": false,
-  "tools": [
+  "enabled_by_default": false,
+  "items": [
+    "brand-guidelines",
     "claude-seo",
-    "marketingskills",
-    "excel-mcp-server"
+    "excel-mcp-server",
+    "marketingskills"
   ]
 }
-

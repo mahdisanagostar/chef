@@ -6,3 +6,4 @@ ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "templates"
 PACKS_DIR = ROOT / "packs"
 PACKS_FILE = ROOT / "core" / "packs.json"
+CATALOG_FILE = ROOT / "catalog" / "items.json"

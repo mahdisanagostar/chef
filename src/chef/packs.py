@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from chef.catalog import read_item_catalog
 from chef.paths import PACKS_DIR, PACKS_FILE
 from chef.scaffold import write_file
 
@@ -57,9 +58,25 @@ def read_pack_registry() -> dict[str, dict[str, object]]:
             "enabled_by_default": normalized["enabled_by_default"],
             "items": normalized["items"],
         }
-    if registry:
-        return registry
-    return normalize_legacy_registry(json.loads(PACKS_FILE.read_text(encoding="utf-8")), PACKS_FILE)
+    if not registry:
+        registry = normalize_legacy_registry(
+            json.loads(PACKS_FILE.read_text(encoding="utf-8")), PACKS_FILE
+        )
+
+    catalog = read_item_catalog()
+    unknown_items = sorted(
+        {
+            item_id
+            for pack in registry.values()
+            for item_id in pack["items"]
+            if item_id not in catalog
+        }
+    )
+    if unknown_items:
+        raise ValueError(
+            f"Pack registry references unknown catalog items: {', '.join(unknown_items)}"
+        )
+    return registry
 
 
 def pack_state_path(project: Path) -> Path:
@@ -91,3 +108,37 @@ def read_enabled_packs(project: Path) -> dict[str, object]:
 
 def write_enabled_packs(project: Path, state: dict[str, object]) -> None:
     write_file(pack_state_path(project), json.dumps(state, indent=2) + "\n")
+
+
+def resolve_enabled_items(
+    project: Path, host: str | None = None, include_always_installed: bool = True
+) -> list[dict[str, object]]:
+    registry = read_pack_registry()
+    state = read_enabled_packs(project)
+    catalog = read_item_catalog()
+
+    enabled_packs = state.get("enabled", [])
+    if not isinstance(enabled_packs, list):
+        raise ValueError("Enabled pack state must include an enabled list.")
+
+    unknown_packs = sorted(pack_name for pack_name in enabled_packs if pack_name not in registry)
+    if unknown_packs:
+        raise ValueError(f"Enabled pack state references unknown packs: {', '.join(unknown_packs)}")
+
+    item_ids: set[str] = set()
+    for pack_name in enabled_packs:
+        item_ids.update(registry[pack_name]["items"])
+
+    if include_always_installed:
+        item_ids.update(
+            item_id for item_id, item in catalog.items() if bool(item.get("always_installed"))
+        )
+
+    resolved: list[dict[str, object]] = []
+    for item_id in sorted(item_ids):
+        item = catalog[item_id]
+        hosts = item.get("hosts", [])
+        if host and host not in hosts:
+            continue
+        resolved.append(item)
+    return resolved

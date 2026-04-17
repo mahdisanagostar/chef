@@ -35,6 +35,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     scaffold.write_manifest(project, args.host, vault_path)
     try:
         pack_ops.write_enabled_packs(project, pack_ops.read_enabled_packs(project))
+        pack_ops.resolve_enabled_items(project)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -45,14 +46,43 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_install(args: argparse.Namespace) -> int:
     project = detect_project(args)
+    codex_items: list[dict[str, object]] = []
+    claude_items: list[dict[str, object]] = []
+    try:
+        if args.host in {"claude", "both"}:
+            claude_items = pack_ops.resolve_enabled_items(project, host="claude")
+        if args.host in {"codex", "both"}:
+            codex_items = pack_ops.resolve_enabled_items(project, host="codex")
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
     installed: list[str] = []
+    manual_items: dict[str, str] = {}
     if args.host in {"claude", "both"}:
         installed.extend(host_install.install_claude(project))
+        for item in claude_items:
+            if item["install"]["method"] != "manual":
+                continue
+            manual_items[str(item["id"])] = str(item["source_url"])
     if args.host in {"codex", "both"}:
-        installed.extend(host_install.install_codex(project))
+        codex_skill_names = {
+            str(item["id"])
+            for item in codex_items
+            if item["install"]["method"] == "bundled" and item["kind"] == "codex_skill"
+        }
+        installed.extend(host_install.install_codex(project, codex_skill_names))
+        for item in codex_items:
+            if item["install"]["method"] != "manual":
+                continue
+            manual_items[str(item["id"])] = str(item["source_url"])
     print("Installed CHEF assets:")
     for path in installed:
         print(f"- {path}")
+    if manual_items:
+        print("Enabled catalog items requiring manual install:")
+        for item_id in sorted(manual_items):
+            print(f"- {item_id}: {manual_items[item_id]}")
     return 0
 
 
@@ -147,7 +177,16 @@ def cmd_pack_enable(args: argparse.Namespace) -> int:
         return 1
     enabled.update(args.pack)
     pack_ops.write_enabled_packs(project, {"enabled": sorted(enabled)})
-    print(json.dumps({"enabled": sorted(enabled)}, indent=2))
+    resolved = pack_ops.resolve_enabled_items(project, include_always_installed=False)
+    print(
+        json.dumps(
+            {
+                "enabled": sorted(enabled),
+                "enabled_items": sorted(str(item["id"]) for item in resolved),
+            },
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -156,13 +195,19 @@ def cmd_pack_status(args: argparse.Namespace) -> int:
     try:
         registry = pack_ops.read_pack_registry()
         state = pack_ops.read_enabled_packs(project)
+        resolved = pack_ops.resolve_enabled_items(project)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
     enabled = set(state.get("enabled", []))
+    bundled = sorted(str(item["id"]) for item in resolved if item["install"]["method"] == "bundled")
+    manual = sorted(str(item["id"]) for item in resolved if item["install"]["method"] == "manual")
     output = {
         "enabled": sorted(enabled),
         "available": sorted(registry.keys()),
+        "enabled_items": sorted(str(item["id"]) for item in resolved),
+        "bundled_items": bundled,
+        "manual_items": manual,
     }
     print(json.dumps(output, indent=2))
     return 0

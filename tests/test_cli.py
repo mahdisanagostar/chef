@@ -175,6 +175,72 @@ class ChefCliTests(unittest.TestCase):
                 },
             )
 
+    def test_pack_status_resolves_enabled_catalog_items(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+
+            code, stdout, _ = run_command(chef_cli.cmd_pack_status, project=str(project))
+            self.assertEqual(code, 0)
+            status = json.loads(stdout)
+
+            self.assertEqual(status["enabled"], ["core"])
+            self.assertIn("chef-index", status["bundled_items"])
+            self.assertIn("graph-first-retrieval", status["bundled_items"])
+            self.assertIn("skill-finder", status["bundled_items"])
+            self.assertIn("feature-forge", status["manual_items"])
+            self.assertIn("playwright-skill", status["manual_items"])
+
+    def test_cmd_install_codex_respects_enabled_bundled_skills(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            home = root / "home"
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+
+            with patch.object(host_install.Path, "home", return_value=home):
+                code, stdout, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex"
+                )
+
+            self.assertEqual(code, 0)
+            self.assertTrue((home / ".codex" / "skills" / "chef-index" / "SKILL.md").exists())
+            self.assertTrue(
+                (home / ".codex" / "skills" / "graph-first-retrieval" / "SKILL.md").exists()
+            )
+            self.assertTrue((home / ".codex" / "skills" / "skill-finder" / "SKILL.md").exists())
+            self.assertIn("Enabled catalog items requiring manual install:", stdout)
+            self.assertIn("feature-forge:", stdout)
+
+    def test_cmd_install_codex_skips_optional_skills_when_no_pack_enables_them(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            home = root / "home"
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
+
+            with patch.object(host_install.Path, "home", return_value=home):
+                code, _, _ = run_command(chef_cli.cmd_install, project=str(project), host="codex")
+
+            self.assertEqual(code, 0)
+            self.assertTrue((home / ".codex" / "skills" / "chef-index" / "SKILL.md").exists())
+            self.assertTrue(
+                (home / ".codex" / "skills" / "graph-first-retrieval" / "SKILL.md").exists()
+            )
+            self.assertFalse((home / ".codex" / "skills" / "skill-finder").exists())
+
     def test_install_codex_replaces_existing_skill_copy(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp) / "root"
@@ -379,6 +445,23 @@ class ChefCliTests(unittest.TestCase):
 
             self.assertEqual(code, 1)
             self.assertIn("Invalid pack definition", stderr)
+
+    def test_pack_status_reports_unknown_catalog_items_cleanly(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            packs_dir = root / "packs"
+            (packs_dir / "broken").mkdir(parents=True)
+            (packs_dir / "broken" / "pack.json").write_text(
+                '{"name":"broken","items":["missing-item"]}\n', encoding="utf-8"
+            )
+            project.mkdir(parents=True)
+
+            with patch.object(pack_ops, "PACKS_DIR", packs_dir):
+                code, _, stderr = run_command(chef_cli.cmd_pack_status, project=str(project))
+
+            self.assertEqual(code, 1)
+            self.assertIn("unknown catalog items", stderr)
 
 
 if __name__ == "__main__":

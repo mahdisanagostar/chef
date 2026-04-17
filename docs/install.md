@@ -55,6 +55,11 @@ Dual install:
 chef install --host both --project .
 ```
 
+Pack-aware install behavior:
+
+- bundled Codex skills install only when enabled by packs or marked always-installed in the catalog
+- external catalog items stay manual for now; CHEF prints their upstream URLs after install
+
 Restore one backed-up managed target:
 
 ```bash
@@ -90,6 +95,9 @@ CHEF ships three MCP entry points after install:
 
 Manifest format and validation live in
 [docs/manifest-schema.md](manifest-schema.md)
+
+Catalog details live in
+[docs/catalog-schema.md](catalog-schema.md)
 
 ## Tests
 

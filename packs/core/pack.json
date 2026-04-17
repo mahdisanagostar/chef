@@ -1,15 +1,19 @@
 {
   "name": "core",
-  "default": true,
-  "tools": [
-    "graphify",
-    "feature-forge",
-    "spec-miner",
+  "enabled_by_default": true,
+  "items": [
     "code-reviewer",
-    "secure-code-guardian",
-    "using-git-worktrees",
+    "feature-forge",
     "frontend-design",
-    "skill-finder"
+    "graphify",
+    "gstack",
+    "playwright-skill",
+    "ruflo",
+    "secure-code-guardian",
+    "skill-finder",
+    "skill-creator",
+    "spec-miner",
+    "superpowers",
+    "using-git-worktrees"
   ]
 }
-

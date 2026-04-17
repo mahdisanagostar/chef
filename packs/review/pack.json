@@ -1,10 +1,9 @@
 {
   "name": "review",
-  "default": false,
-  "tools": [
-    "code-review-graph",
+  "enabled_by_default": false,
+  "items": [
     "anthropic-code-review",
+    "code-review-graph",
     "the-fool"
   ]
 }
-

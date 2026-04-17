@@ -1,13 +1,13 @@
 {
   "name": "media",
-  "default": false,
-  "tools": [
-    "patrick-winston",
-    "remotion-best-practices",
+  "enabled_by_default": false,
+  "items": [
+    "algorithmic-art",
     "canvas-design",
+    "massgen",
+    "remotion",
+    "remotion-best-practices",
     "theme-factory",
-    "web-artifacts-builder",
-    "algorithmic-art"
+    "web-artifacts-builder"
   ]
 }
-

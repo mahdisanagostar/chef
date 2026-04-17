@@ -1,0 +1,302 @@
+{
+  "algorithmic-art": {
+    "name": "Algorithmic Art",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/algorithmic-art/SKILL.md"
+  },
+  "anthropic-code-review": {
+    "name": "Anthropic Code Review",
+    "kind": "plugin",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/code-review"
+  },
+  "brand-guidelines": {
+    "name": "Brand Guidelines",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md"
+  },
+  "building-native-ui": {
+    "name": "Building Native UI",
+    "kind": "skill",
+    "hosts": ["codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/expo/skills/blob/main/plugins/expo/skills/building-native-ui/SKILL.md"
+  },
+  "canvas-design": {
+    "name": "Canvas Design",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/canvas-design/SKILL.md"
+  },
+  "chef-index": {
+    "name": "CHEF Index",
+    "kind": "codex_skill",
+    "hosts": ["codex"],
+    "install": {"method": "bundled", "path": "adapters/codex/skills/chef-index"},
+    "always_installed": true
+  },
+  "claude-mem": {
+    "name": "Claude Mem",
+    "kind": "plugin",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/thedotmack/claude-mem"
+  },
+  "claude-seo": {
+    "name": "Claude SEO",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/AgriciDaniel/claude-seo"
+  },
+  "code-review-graph": {
+    "name": "Code Review Graph",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/tirth8205/code-review-graph"
+  },
+  "code-reviewer": {
+    "name": "Code Reviewer",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/quality/code-reviewer/"
+  },
+  "design-sprint": {
+    "name": "Design Sprint",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/wondelai/skills/design-sprint"
+  },
+  "excel-mcp-server": {
+    "name": "Excel MCP Server",
+    "kind": "mcp_server",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/haris-musa/excel-mcp-server"
+  },
+  "feature-forge": {
+    "name": "Feature Forge",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/feature-forge/"
+  },
+  "frontend-design": {
+    "name": "Frontend Design",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md"
+  },
+  "graph-first-retrieval": {
+    "name": "Graph First Retrieval",
+    "kind": "codex_skill",
+    "hosts": ["codex"],
+    "install": {"method": "bundled", "path": "adapters/codex/skills/graph-first-retrieval"},
+    "always_installed": true
+  },
+  "graphify": {
+    "name": "Graphify",
+    "kind": "tool",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://pypi.org/project/graphifyy/"
+  },
+  "gstack": {
+    "name": "gstack",
+    "kind": "repo",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/garrytan/gstack"
+  },
+  "hooked-ux": {
+    "name": "Hooked UX",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/wondelai/skills/hooked-ux"
+  },
+  "ios-hig-design": {
+    "name": "iOS HIG Design",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/wondelai/skills/ios-hig-design"
+  },
+  "marketingskills": {
+    "name": "Marketing Skills",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/coreyhaines31/marketingskills"
+  },
+  "massgen": {
+    "name": "MassGen",
+    "kind": "repo",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/massgen/MassGen"
+  },
+  "notebooklm-mcp": {
+    "name": "NotebookLM MCP",
+    "kind": "mcp_server",
+    "hosts": ["codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/PleasePrompto/notebooklm-mcp"
+  },
+  "notebooklm-skill": {
+    "name": "NotebookLM Skill",
+    "kind": "skill",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/PleasePrompto/notebooklm-skill"
+  },
+  "obsidian-skills": {
+    "name": "Obsidian Skills",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/kepano/obsidian-skills"
+  },
+  "owasp-security": {
+    "name": "OWASP Security",
+    "kind": "skill",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/agamm/claude-code-owasp/blob/main/.claude/skills/owasp-security/SKILL.md"
+  },
+  "playwright-skill": {
+    "name": "Playwright Skill",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/testdino-hq/playwright-skill"
+  },
+  "rag-architect": {
+    "name": "RAG Architect",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/data-ml/rag-architect/"
+  },
+  "refactoring-ui": {
+    "name": "Refactoring UI",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/wondelai/skills/refactoring-ui"
+  },
+  "remotion": {
+    "name": "Remotion",
+    "kind": "repo",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/remotion-dev/remotion"
+  },
+  "remotion-best-practices": {
+    "name": "Remotion Best Practices",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/openclaw/skills/blob/main/skills/am-will/remotion-best-practices/"
+  },
+  "ruflo": {
+    "name": "ruflo",
+    "kind": "repo",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/ruvnet/ruflo"
+  },
+  "secure-code-guardian": {
+    "name": "Secure Code Guardian",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/security/secure-code-guardian/"
+  },
+  "security-guidance": {
+    "name": "Security Guidance",
+    "kind": "plugin",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/security-guidance"
+  },
+  "skill-creator": {
+    "name": "Skill Creator",
+    "kind": "skill",
+    "hosts": ["claude"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md"
+  },
+  "skill-finder": {
+    "name": "Skill Finder",
+    "kind": "codex_skill",
+    "hosts": ["codex"],
+    "install": {"method": "bundled", "path": "adapters/codex/skills/skill-finder"}
+  },
+  "spec-miner": {
+    "name": "Spec Miner",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/spec-miner/"
+  },
+  "superpowers": {
+    "name": "Superpowers",
+    "kind": "repo",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/obra/superpowers"
+  },
+  "the-fool": {
+    "name": "The Fool",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/the-fool/"
+  },
+  "theme-factory": {
+    "name": "Theme Factory",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/theme-factory/SKILL.md"
+  },
+  "ui-ux-pro-max": {
+    "name": "UI UX Pro Max",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/nextlevelbuilder/ui-ux-pro-max-skill/ui-ux-pro-max"
+  },
+  "using-git-worktrees": {
+    "name": "Using Git Worktrees",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/obra/superpowers/blob/main/skills/using-git-worktrees"
+  },
+  "ux-heuristics": {
+    "name": "UX Heuristics",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://skills.sh/wondelai/skills/ux-heuristics"
+  },
+  "web-artifacts-builder": {
+    "name": "Web Artifacts Builder",
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "manual"},
+    "source_url": "https://github.com/anthropics/skills/blob/main/skills/web-artifacts-builder/SKILL.md"
+  }
+}

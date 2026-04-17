@@ -1,10 +1,12 @@
 {
   "name": "research",
-  "default": false,
-  "tools": [
+  "enabled_by_default": false,
+  "items": [
+    "claude-mem",
     "notebooklm-mcp",
+    "notebooklm-skill",
+    "obsidian-skills",
     "rag-architect",
-    "obsidian-skills"
+    "superpowers"
   ]
 }
-

@@ -11,6 +11,7 @@ CHEF provides one modular enhancement package for Claude and Codex.
 - Native host routing.
 - Optional domain packs.
 - Built-in MCP servers.
+- One capability catalog for pack resolution.
 
 ## Quick Start
 
@@ -46,6 +47,8 @@ Both:
 chef install --host both --project .
 ```
 
+`chef install` installs bundled CHEF assets and prints enabled external catalog items that still need manual setup.
+
 Restore a managed backup:
 
 ```bash
@@ -75,10 +78,12 @@ python -m unittest discover -s tests -v
 ## Key Paths
 
 - [docs/architecture.md](docs/architecture.md)
+- [docs/catalog-schema.md](docs/catalog-schema.md)
 - [docs/install.md](docs/install.md)
 - [docs/manifest-schema.md](docs/manifest-schema.md)
 - [docs/publish.md](docs/publish.md)
 - [docs/tool-matrix.md](docs/tool-matrix.md)
+- [catalog/items.json](catalog/items.json)
 - [knowledge-vault/Home/Home.md](knowledge-vault/Home/Home.md)
 - [knowledge-vault/Graphify/index.md](knowledge-vault/Graphify/index.md)
 - [mcp/chef-knowledge-mcp/README.md](mcp/chef-knowledge-mcp/README.md)

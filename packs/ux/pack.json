@@ -1,12 +1,14 @@
 {
   "name": "ux",
-  "default": false,
-  "tools": [
-    "frontend-design",
-    "ux-heuristics",
-    "refactoring-ui",
+  "enabled_by_default": false,
+  "items": [
+    "building-native-ui",
     "design-sprint",
-    "ios-hig-design"
+    "frontend-design",
+    "hooked-ux",
+    "ios-hig-design",
+    "refactoring-ui",
+    "ui-ux-pro-max",
+    "ux-heuristics"
   ]
 }
-

@@ -1,10 +1,9 @@
 {
   "name": "security",
-  "default": false,
-  "tools": [
-    "secure-code-guardian",
+  "enabled_by_default": false,
+  "items": [
     "security-guidance",
+    "secure-code-guardian",
     "owasp-security"
   ]
 }
-

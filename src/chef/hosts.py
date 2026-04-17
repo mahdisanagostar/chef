@@ -96,14 +96,17 @@ def install_claude(project: Path) -> list[str]:
     return installed
 
 
-def install_codex(project: Path) -> list[str]:
+def install_codex(project: Path, skill_names: set[str] | None = None) -> list[str]:
     home = Path.home()
     target = home / ".codex" / "skills"
     target.mkdir(parents=True, exist_ok=True)
     src = ROOT / "adapters" / "codex" / "skills"
     installed: list[str] = []
+    selected = None if skill_names is None else set(skill_names)
     for skill_dir in src.iterdir():
         if not skill_dir.is_dir():
+            continue
+        if selected is not None and skill_dir.name not in selected:
             continue
         dest = target / skill_dir.name
         backup = backup_existing_path(dest, home, f"codex-skill-{skill_dir.name}")
