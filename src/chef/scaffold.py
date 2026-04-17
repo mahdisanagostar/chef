@@ -40,9 +40,15 @@ def ensure_graph_placeholders(vault_path: Path) -> None:
 
 
 def ensure_vault(vault_path: Path) -> None:
-    write_file_if_missing(vault_path / "Home" / "Home.md", read_template("vault", "Home", "Home.md"))
-    write_file_if_missing(vault_path / "Memory" / "Memory.md", read_template("vault", "Memory", "Memory.md"))
-    write_file_if_missing(vault_path / "Graphify" / "index.md", read_template("vault", "Graphify", "index.md"))
+    write_file_if_missing(
+        vault_path / "Home" / "Home.md", read_template("vault", "Home", "Home.md")
+    )
+    write_file_if_missing(
+        vault_path / "Memory" / "Memory.md", read_template("vault", "Memory", "Memory.md")
+    )
+    write_file_if_missing(
+        vault_path / "Graphify" / "index.md", read_template("vault", "Graphify", "index.md")
+    )
     (vault_path / "Graphify" / "graphify-out").mkdir(parents=True, exist_ok=True)
     ensure_graph_placeholders(vault_path)
 
@@ -87,7 +93,9 @@ def ensure_project_files(project: Path, host: str) -> None:
         write_file_if_missing(project / "CLAUDE.md", read_template("project", "CLAUDE.md"))
     if host in {"codex", "both"}:
         write_file_if_missing(project / "AGENTS.md", read_template("project", "AGENTS.md"))
-        write_file_if_missing(project / ".codex" / "config.toml", read_template("project", "codex.config.toml"))
+        write_file_if_missing(
+            project / ".codex" / "config.toml", read_template("project", "codex.config.toml")
+        )
 
 
 def manifest_path_value(project: Path, target: Path) -> str:
@@ -105,13 +113,20 @@ def build_manifest(project: Path, host: str, vault_path: Path) -> dict[str, str]
         "host": host,
         "vault": manifest_path_value(project, vault_path),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "graph_index": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md"),
-        "graph_report": manifest_path_value(project, vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"),
+        "graph_index": manifest_path_value(
+            project, vault_path / "Graphify" / "graphify-out" / "wiki" / "index.md"
+        ),
+        "graph_report": manifest_path_value(
+            project, vault_path / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"
+        ),
     }
 
 
 def write_manifest(project: Path, host: str, vault_path: Path) -> None:
-    write_file(project / ".chef" / "chef.json", json.dumps(build_manifest(project, host, vault_path), indent=2) + "\n")
+    write_file(
+        project / ".chef" / "chef.json",
+        json.dumps(build_manifest(project, host, vault_path), indent=2) + "\n",
+    )
 
 
 def manifest_path(project: Path) -> Path:
@@ -175,7 +190,8 @@ def build_verify_checks(project: Path, manifest: dict[str, str]) -> dict[str, bo
     return {
         "CLAUDE.md": host not in {"claude", "both"} or (project / "CLAUDE.md").exists(),
         "AGENTS.md": host not in {"codex", "both"} or (project / "AGENTS.md").exists(),
-        ".codex/config.toml": host not in {"codex", "both"} or (project / ".codex" / "config.toml").exists(),
+        ".codex/config.toml": host not in {"codex", "both"}
+        or (project / ".codex" / "config.toml").exists(),
         "vault_home": (vault_path / "Home" / "Home.md").exists(),
         "vault_memory": (vault_path / "Memory" / "Memory.md").exists(),
         "graph_index_page": (vault_path / "Graphify" / "index.md").exists(),

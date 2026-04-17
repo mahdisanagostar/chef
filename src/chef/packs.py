@@ -17,11 +17,15 @@ def normalize_pack_definition(name: str, data: object, source: Path) -> dict[str
 
     items = data.get("items", data.get("tools", []))
     if not isinstance(items, list) or any(not isinstance(item, str) or not item for item in items):
-        raise ValueError(f"Invalid pack definition at {source}: items/tools must be a list of non-empty strings.")
+        raise ValueError(
+            f"Invalid pack definition at {source}: items/tools must be a list of non-empty strings."
+        )
 
     enabled_by_default = data.get("enabled_by_default", data.get("default", False))
     if not isinstance(enabled_by_default, bool):
-        raise ValueError(f"Invalid pack definition at {source}: enabled_by_default/default must be boolean.")
+        raise ValueError(
+            f"Invalid pack definition at {source}: enabled_by_default/default must be boolean."
+        )
 
     return {
         "name": pack_name,
@@ -67,12 +71,21 @@ def read_enabled_packs(project: Path) -> dict[str, object]:
     if path.exists():
         state = json.loads(path.read_text(encoding="utf-8"))
         enabled = state.get("enabled") if isinstance(state, dict) else None
-        if not isinstance(enabled, list) or any(not isinstance(item, str) or not item for item in enabled):
-            raise ValueError(f"Invalid enabled pack state at {path}: enabled must be a list of non-empty strings.")
+        if not isinstance(enabled, list) or any(
+            not isinstance(item, str) or not item for item in enabled
+        ):
+            raise ValueError(
+                f"Invalid enabled pack state at {path}: "
+                "enabled must be a list of non-empty strings."
+            )
         return {"enabled": enabled}
 
     registry = read_pack_registry()
-    defaults = sorted(name for name, meta in registry.items() if meta.get("enabled_by_default") or meta.get("default"))
+    defaults = sorted(
+        name
+        for name, meta in registry.items()
+        if meta.get("enabled_by_default") or meta.get("default")
+    )
     return {"enabled": defaults}
 
 

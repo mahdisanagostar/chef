@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 import shutil
 import sys
@@ -11,15 +12,17 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import chef.cli as chef_cli
-from chef import graphify as graphify_ops
-from chef import hosts as host_install
-from chef.mcp import common as mcp_common
-from chef import packs as pack_ops
+chef_cli = importlib.import_module("chef.cli")
+graphify_ops = importlib.import_module("chef.graphify")
+host_install = importlib.import_module("chef.hosts")
+pack_ops = importlib.import_module("chef.packs")
+mcp_common = importlib.import_module("chef.mcp.common")
+mcp_knowledge = importlib.import_module("chef.mcp.knowledge")
+mcp_review = importlib.import_module("chef.mcp.review")
+mcp_security = importlib.import_module("chef.mcp.security")
 
 
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
@@ -34,7 +37,9 @@ class ChefCliTests(unittest.TestCase):
     def test_verify_respects_claude_only_projects(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="claude", vault="new", vault_path=None)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="claude", vault="new", vault_path=None
+            )
             self.assertEqual(code, 0)
 
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
@@ -60,14 +65,26 @@ class ChefCliTests(unittest.TestCase):
                 vault_path=str(vault),
             )
             self.assertEqual(code, 0)
-            self.assertEqual((vault / "Home" / "Home.md").read_text(encoding="utf-8"), "CUSTOM HOME\n")
-            self.assertEqual((vault / "Memory" / "Memory.md").read_text(encoding="utf-8"), "CUSTOM MEMORY\n")
-            self.assertEqual((vault / "Graphify" / "index.md").read_text(encoding="utf-8"), "CUSTOM GRAPH\n")
+            self.assertEqual(
+                (vault / "Home" / "Home.md").read_text(encoding="utf-8"), "CUSTOM HOME\n"
+            )
+            self.assertEqual(
+                (vault / "Memory" / "Memory.md").read_text(encoding="utf-8"), "CUSTOM MEMORY\n"
+            )
+            self.assertEqual(
+                (vault / "Graphify" / "index.md").read_text(encoding="utf-8"), "CUSTOM GRAPH\n"
+            )
 
             manifest = json.loads((project / ".chef" / "chef.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["vault"], str(vault.resolve()))
-            self.assertEqual(manifest["graph_index"], str((vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve()))
-            self.assertEqual(manifest["graph_report"], str((vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve()))
+            self.assertEqual(
+                manifest["graph_index"],
+                str((vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve()),
+            )
+            self.assertEqual(
+                manifest["graph_report"],
+                str((vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve()),
+            )
 
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
@@ -91,7 +108,9 @@ class ChefCliTests(unittest.TestCase):
     def test_graph_refresh_dry_run_preserves_existing_graph_outputs(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
             self.assertEqual(code, 0)
 
             report = project / "knowledge-vault" / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"
@@ -99,7 +118,9 @@ class ChefCliTests(unittest.TestCase):
             report.write_text("REAL REPORT\n", encoding="utf-8")
             index.write_text("REAL INDEX\n", encoding="utf-8")
 
-            code, _, _ = run_command(chef_cli.cmd_graph_refresh, project=str(project), host="codex", execute=False)
+            code, _, _ = run_command(
+                chef_cli.cmd_graph_refresh, project=str(project), host="codex", execute=False
+            )
             self.assertEqual(code, 0)
             self.assertEqual(report.read_text(encoding="utf-8"), "REAL REPORT\n")
             self.assertEqual(index.read_text(encoding="utf-8"), "REAL INDEX\n")
@@ -107,13 +128,19 @@ class ChefCliTests(unittest.TestCase):
     def test_new_vault_manifest_uses_project_relative_paths(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="both", vault="new", vault_path=None)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="both", vault="new", vault_path=None
+            )
             self.assertEqual(code, 0)
 
             manifest = json.loads((project / ".chef" / "chef.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["vault"], "knowledge-vault")
-            self.assertEqual(manifest["graph_index"], "knowledge-vault/Graphify/graphify-out/wiki/index.md")
-            self.assertEqual(manifest["graph_report"], "knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md")
+            self.assertEqual(
+                manifest["graph_index"], "knowledge-vault/Graphify/graphify-out/wiki/index.md"
+            )
+            self.assertEqual(
+                manifest["graph_report"], "knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md"
+            )
 
     def test_pack_registry_prefers_pack_directory_definitions(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -128,12 +155,20 @@ class ChefCliTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (packs_dir / "beta" / "pack.json").write_text(
-                json.dumps({"name": "beta", "enabled_by_default": False, "items": ["secure-code-guardian"]}),
+                json.dumps(
+                    {"name": "beta", "enabled_by_default": False, "items": ["secure-code-guardian"]}
+                ),
                 encoding="utf-8",
             )
-            legacy_file.write_text(json.dumps({"legacy": {"enabled_by_default": True, "items": ["old"]}}), encoding="utf-8")
+            legacy_file.write_text(
+                json.dumps({"legacy": {"enabled_by_default": True, "items": ["old"]}}),
+                encoding="utf-8",
+            )
 
-            with patch.object(pack_ops, "PACKS_DIR", packs_dir), patch.object(pack_ops, "PACKS_FILE", legacy_file):
+            with (
+                patch.object(pack_ops, "PACKS_DIR", packs_dir),
+                patch.object(pack_ops, "PACKS_FILE", legacy_file),
+            ):
                 registry = pack_ops.read_pack_registry()
 
             self.assertEqual(
@@ -161,13 +196,26 @@ class ChefCliTests(unittest.TestCase):
             existing.mkdir(parents=True)
             (existing / "OLD.md").write_text("old\n", encoding="utf-8")
 
-            with patch.object(host_install, "ROOT", root), patch.object(host_install.Path, "home", return_value=home):
+            with (
+                patch.object(host_install, "ROOT", root),
+                patch.object(host_install.Path, "home", return_value=home),
+                patch.object(host_install, "timestamp_label", return_value="20260417T000000Z"),
+            ):
                 installed = host_install.install_codex(project)
 
             self.assertIn(str(home / ".codex" / "skills" / "skill-a"), installed)
             self.assertIn(str(project / ".codex-plugin"), installed)
+            self.assertIn(
+                f"backup:{home / '.chef' / 'backups' / 'codex-skill-skill-a-20260417T000000Z'}",
+                installed,
+            )
             self.assertTrue((home / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
             self.assertFalse((home / ".codex" / "skills" / "skill-a" / "OLD.md").exists())
+            self.assertTrue(
+                (
+                    home / ".chef" / "backups" / "codex-skill-skill-a-20260417T000000Z" / "OLD.md"
+                ).exists()
+            )
             self.assertTrue((project / ".codex-plugin" / "plugin.json").exists())
 
     def test_install_claude_copies_commands_and_plugin(self) -> None:
@@ -182,14 +230,51 @@ class ChefCliTests(unittest.TestCase):
             project.mkdir(parents=True)
             (commands_src / "chef-pack-status.md").write_text("# status\n", encoding="utf-8")
             (plugin_src / "plugin.json").write_text('{"name":"chef"}\n', encoding="utf-8")
+            existing_command_dir = home / ".claude" / "commands" / "chef"
+            existing_plugin_dir = home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
+            existing_command_dir.mkdir(parents=True)
+            existing_plugin_dir.mkdir(parents=True)
+            (existing_command_dir / "OLD.md").write_text("old command\n", encoding="utf-8")
+            (existing_plugin_dir / "plugin.json").write_text('{"name":"old"}\n', encoding="utf-8")
 
-            with patch.object(host_install, "ROOT", root), patch.object(host_install.Path, "home", return_value=home):
+            with (
+                patch.object(host_install, "ROOT", root),
+                patch.object(host_install.Path, "home", return_value=home),
+                patch.object(host_install, "timestamp_label", return_value="20260417T000001Z"),
+            ):
                 installed = host_install.install_claude(project)
 
             self.assertIn(str(home / ".claude" / "commands" / "chef"), installed)
-            self.assertIn(str(home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"), installed)
-            self.assertTrue((home / ".claude" / "commands" / "chef" / "chef-pack-status.md").exists())
-            self.assertTrue((home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin" / "plugin.json").exists())
+            self.assertIn(
+                str(home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"), installed
+            )
+            self.assertIn(
+                f"backup:{home / '.chef' / 'backups' / 'claude-commands-chef-20260417T000001Z'}",
+                installed,
+            )
+            self.assertIn(
+                f"backup:{home / '.chef' / 'backups' / 'claude-plugin-chef-20260417T000001Z'}",
+                installed,
+            )
+            self.assertTrue(
+                (home / ".claude" / "commands" / "chef" / "chef-pack-status.md").exists()
+            )
+            self.assertTrue(
+                (
+                    home
+                    / ".claude"
+                    / "plugins"
+                    / "local"
+                    / "chef"
+                    / ".claude-plugin"
+                    / "plugin.json"
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    home / ".chef" / "backups" / "claude-commands-chef-20260417T000001Z" / "OLD.md"
+                ).exists()
+            )
 
     def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -205,7 +290,9 @@ class ChefCliTests(unittest.TestCase):
 
     def test_run_graphify_command_returns_127_when_binary_missing(self) -> None:
         with TemporaryDirectory() as tmp:
-            code = graphify_ops.run_graphify_command(["definitely-missing-graphify-binary"], Path(tmp))
+            code = graphify_ops.run_graphify_command(
+                ["definitely-missing-graphify-binary"], Path(tmp)
+            )
             self.assertEqual(code, 127)
 
     def test_mcp_common_uses_manifest_defined_external_vault(self) -> None:
@@ -219,8 +306,12 @@ class ChefCliTests(unittest.TestCase):
             (vault / "Home" / "Home.md").write_text("home\n", encoding="utf-8")
             (vault / "Memory" / "Memory.md").write_text("memory\n", encoding="utf-8")
             (vault / "Graphify" / "index.md").write_text("graph\n", encoding="utf-8")
-            (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").write_text("wiki\n", encoding="utf-8")
-            (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").write_text("report\n", encoding="utf-8")
+            (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").write_text(
+                "wiki\n", encoding="utf-8"
+            )
+            (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").write_text(
+                "report\n", encoding="utf-8"
+            )
 
             code, _, _ = run_command(
                 chef_cli.cmd_init,
@@ -231,8 +322,19 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertEqual(code, 0)
             self.assertEqual(mcp_common.vault_dir(str(project)), vault.resolve())
-            self.assertEqual(mcp_common.graph_index_path(str(project)), (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve())
-            self.assertEqual(mcp_common.graph_report_path(str(project)), (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve())
+            self.assertEqual(
+                mcp_common.graph_index_path(str(project)),
+                (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve(),
+            )
+            self.assertEqual(
+                mcp_common.graph_report_path(str(project)),
+                (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve(),
+            )
+            warning = mcp_common.manifest_warning(str(project))
+            self.assertIn("external vault", warning or "")
+            self.assertIn("Warning:", mcp_knowledge.vault_summary(str(project)))
+            self.assertIn("Warning:", mcp_review.review_sources(str(project)))
+            self.assertIn("Warning:", mcp_security.security_review_order(str(project)))
 
     def test_verify_reports_invalid_manifest_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -244,6 +346,7 @@ class ChefCliTests(unittest.TestCase):
             code, _, stderr = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 1)
             self.assertIn("Invalid manifest", stderr)
+            self.assertIn("Invalid manifest", mcp_common.manifest_warning(str(project)) or "")
 
     def test_pack_status_reports_invalid_pack_definition_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -251,7 +354,9 @@ class ChefCliTests(unittest.TestCase):
             project = root / "project"
             packs_dir = root / "packs"
             (packs_dir / "broken").mkdir(parents=True)
-            (packs_dir / "broken" / "pack.json").write_text('{"name":"broken","tools":"not-a-list"}\n', encoding="utf-8")
+            (packs_dir / "broken" / "pack.json").write_text(
+                '{"name":"broken","tools":"not-a-list"}\n', encoding="utf-8"
+            )
             project.mkdir(parents=True)
 
             with patch.object(pack_ops, "PACKS_DIR", packs_dir):

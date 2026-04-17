@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from mcp.server.fastmcp import FastMCP
 
-from chef.mcp.common import graph_dir, graph_index_path, graph_report_path, read_text, vault_dir
-
+from chef.mcp.common import (
+    graph_dir,
+    graph_index_path,
+    graph_report_path,
+    manifest_warning,
+    read_text,
+    vault_dir,
+)
 
 mcp = FastMCP("chef-knowledge-mcp")
 
@@ -13,12 +17,18 @@ mcp = FastMCP("chef-knowledge-mcp")
 @mcp.tool()
 def vault_summary(project_dir: str = ".") -> str:
     vault = vault_dir(project_dir)
-    lines = [
-        f"Vault: {vault}",
-        f"Home: {(vault / 'Home' / 'Home.md').exists()}",
-        f"Memory: {(vault / 'Memory' / 'Memory.md').exists()}",
-        f"Graphify: {(vault / 'Graphify' / 'index.md').exists()}",
-    ]
+    lines: list[str] = []
+    warning = manifest_warning(project_dir)
+    if warning:
+        lines.append(warning)
+    lines.extend(
+        [
+            f"Vault: {vault}",
+            f"Home: {(vault / 'Home' / 'Home.md').exists()}",
+            f"Memory: {(vault / 'Memory' / 'Memory.md').exists()}",
+            f"Graphify: {(vault / 'Graphify' / 'index.md').exists()}",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -55,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

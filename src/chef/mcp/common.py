@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from chef import scaffold
@@ -7,6 +8,22 @@ from chef import scaffold
 
 def resolve_project(project_dir: str = ".") -> Path:
     return Path(project_dir).expanduser().resolve()
+
+
+def manifest_warning(project_dir: str = ".") -> str | None:
+    project = resolve_project(project_dir)
+    path = scaffold.manifest_path(project)
+    if not path.exists():
+        return "Warning: missing .chef/chef.json; using default knowledge-vault path."
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        manifest = scaffold.validate_manifest(raw, source=path)
+    except (json.JSONDecodeError, ValueError) as exc:
+        return f"Warning: {exc}; using default knowledge-vault path."
+    vault = scaffold.resolve_project_path(project, manifest["vault"])
+    if vault != project / "knowledge-vault":
+        return f"Warning: manifest points to external vault: {vault}"
+    return None
 
 
 def vault_dir(project_dir: str = ".") -> Path:

@@ -21,7 +21,11 @@ def cmd_init(args: argparse.Namespace) -> int:
     if args.vault == "existing" and not args.vault_path:
         print("Existing vault mode requires --vault-path.", file=sys.stderr)
         return 1
-    vault_path = Path(args.vault_path).expanduser().resolve() if args.vault_path else project / "knowledge-vault"
+    vault_path = (
+        Path(args.vault_path).expanduser().resolve()
+        if args.vault_path
+        else project / "knowledge-vault"
+    )
     if args.vault == "existing" and not vault_path.exists():
         print(f"Existing vault path not found: {vault_path}", file=sys.stderr)
         return 1

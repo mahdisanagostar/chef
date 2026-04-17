@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from chef.mcp.common import graph_index_path, graph_report_path, read_text
-
+from chef.mcp.common import (
+    graph_index_path,
+    graph_report_path,
+    manifest_warning,
+    read_text,
+)
 
 mcp = FastMCP("chef-review-mcp")
 
@@ -12,7 +16,11 @@ mcp = FastMCP("chef-review-mcp")
 def review_sources(project_dir: str = ".") -> str:
     index_path = graph_index_path(project_dir)
     report_path = graph_report_path(project_dir)
-    return "\n".join(
+    lines: list[str] = []
+    warning = manifest_warning(project_dir)
+    if warning:
+        lines.append(warning)
+    lines.extend(
         [
             f"Graph index: {index_path}",
             f"Graph report: {report_path}",
@@ -23,6 +31,7 @@ def review_sources(project_dir: str = ".") -> str:
             "4. Read raw source only with explicit user override",
         ]
     )
+    return "\n".join(lines)
 
 
 @mcp.tool()
@@ -44,7 +53,11 @@ def review_checklist(scope: str = "general") -> str:
 def review_context(project_dir: str = ".", focus: str = "") -> str:
     index_text = read_text(graph_index_path(project_dir))
     report_text = read_text(graph_report_path(project_dir))
-    return "\n\n".join(
+    sections: list[str] = []
+    warning = manifest_warning(project_dir)
+    if warning:
+        sections.append(warning)
+    sections.extend(
         [
             f"Focus: {focus or 'general review'}",
             "Graph Index",
@@ -53,6 +66,7 @@ def review_context(project_dir: str = ".", focus: str = "") -> str:
             report_text,
         ]
     )
+    return "\n\n".join(sections)
 
 
 def main() -> None:
@@ -61,4 +75,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
