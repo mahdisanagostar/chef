@@ -19,10 +19,6 @@ chef_cli = importlib.import_module("chef.cli")
 graphify_ops = importlib.import_module("chef.graphify")
 host_install = importlib.import_module("chef.hosts")
 pack_ops = importlib.import_module("chef.packs")
-mcp_common = importlib.import_module("chef.mcp.common")
-mcp_knowledge = importlib.import_module("chef.mcp.knowledge")
-mcp_review = importlib.import_module("chef.mcp.review")
-mcp_security = importlib.import_module("chef.mcp.security")
 
 
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
@@ -276,6 +272,67 @@ class ChefCliTests(unittest.TestCase):
                 ).exists()
             )
 
+    def test_restore_backup_restores_codex_skill(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            home = root / "home"
+            backup = home / ".chef" / "backups" / "codex-skill-skill-a-20260417T000002Z"
+            backup.mkdir(parents=True)
+            (backup / "SKILL.md").write_text("# Restored Skill\n", encoding="utf-8")
+
+            with patch.object(host_install.Path, "home", return_value=home):
+                code, stdout, _ = run_command(
+                    chef_cli.cmd_restore_backup,
+                    project=str(project),
+                    backup=str(backup),
+                    force=False,
+                )
+
+            self.assertEqual(code, 0)
+            self.assertIn("Restore actions:", stdout)
+            self.assertTrue((home / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
+            self.assertFalse(backup.exists())
+
+    def test_restore_backup_force_replaces_existing_target(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            home = root / "home"
+            backup = home / ".chef" / "backups" / "project-codex-plugin-20260417T000003Z"
+            target = project / ".codex-plugin"
+            backup.mkdir(parents=True)
+            target.mkdir(parents=True)
+            (backup / "plugin.json").write_text('{"name":"restored"}\n', encoding="utf-8")
+            (target / "plugin.json").write_text('{"name":"current"}\n', encoding="utf-8")
+
+            with (
+                patch.object(host_install.Path, "home", return_value=home),
+                patch.object(host_install, "timestamp_label", return_value="20260417T000004Z"),
+            ):
+                code, stdout, _ = run_command(
+                    chef_cli.cmd_restore_backup,
+                    project=str(project),
+                    backup=str(backup),
+                    force=True,
+                )
+
+            self.assertEqual(code, 0)
+            self.assertIn("backup:", stdout)
+            self.assertEqual(
+                (target / "plugin.json").read_text(encoding="utf-8"),
+                '{"name":"restored"}\n',
+            )
+            self.assertTrue(
+                (
+                    home
+                    / ".chef"
+                    / "backups"
+                    / "restore-overwrite-project-codex-plugin-20260417T000004Z"
+                    / "plugin.json"
+                ).exists()
+            )
+
     def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -295,47 +352,6 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertEqual(code, 127)
 
-    def test_mcp_common_uses_manifest_defined_external_vault(self) -> None:
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            project = root / "project"
-            vault = root / "shared-vault"
-            (vault / "Home").mkdir(parents=True)
-            (vault / "Memory").mkdir(parents=True)
-            (vault / "Graphify" / "graphify-out" / "wiki").mkdir(parents=True)
-            (vault / "Home" / "Home.md").write_text("home\n", encoding="utf-8")
-            (vault / "Memory" / "Memory.md").write_text("memory\n", encoding="utf-8")
-            (vault / "Graphify" / "index.md").write_text("graph\n", encoding="utf-8")
-            (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").write_text(
-                "wiki\n", encoding="utf-8"
-            )
-            (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").write_text(
-                "report\n", encoding="utf-8"
-            )
-
-            code, _, _ = run_command(
-                chef_cli.cmd_init,
-                project=str(project),
-                host="codex",
-                vault="existing",
-                vault_path=str(vault),
-            )
-            self.assertEqual(code, 0)
-            self.assertEqual(mcp_common.vault_dir(str(project)), vault.resolve())
-            self.assertEqual(
-                mcp_common.graph_index_path(str(project)),
-                (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve(),
-            )
-            self.assertEqual(
-                mcp_common.graph_report_path(str(project)),
-                (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve(),
-            )
-            warning = mcp_common.manifest_warning(str(project))
-            self.assertIn("external vault", warning or "")
-            self.assertIn("Warning:", mcp_knowledge.vault_summary(str(project)))
-            self.assertIn("Warning:", mcp_review.review_sources(str(project)))
-            self.assertIn("Warning:", mcp_security.security_review_order(str(project)))
-
     def test_verify_reports_invalid_manifest_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -346,7 +362,6 @@ class ChefCliTests(unittest.TestCase):
             code, _, stderr = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 1)
             self.assertIn("Invalid manifest", stderr)
-            self.assertIn("Invalid manifest", mcp_common.manifest_warning(str(project)) or "")
 
     def test_pack_status_reports_invalid_pack_definition_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:

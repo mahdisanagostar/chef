@@ -46,6 +46,12 @@ Both:
 chef install --host both --project .
 ```
 
+Restore a managed backup:
+
+```bash
+chef restore-backup --project . --backup ~/.chef/backups/codex-skill-skill-finder-20260417T000000Z
+```
+
 Local development wrapper:
 
 ```bash
@@ -70,6 +76,7 @@ python -m unittest discover -s tests -v
 
 - [docs/architecture.md](docs/architecture.md)
 - [docs/install.md](docs/install.md)
+- [docs/manifest-schema.md](docs/manifest-schema.md)
 - [docs/publish.md](docs/publish.md)
 - [docs/tool-matrix.md](docs/tool-matrix.md)
 - [knowledge-vault/Home/Home.md](knowledge-vault/Home/Home.md)

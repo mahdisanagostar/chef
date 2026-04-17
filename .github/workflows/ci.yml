@@ -36,4 +36,5 @@ jobs:
       - name: Smoke test CLI
         run: |
           ./bin/chef --help
+          ./bin/chef restore-backup --help
           ./bin/chef pack-status --project .

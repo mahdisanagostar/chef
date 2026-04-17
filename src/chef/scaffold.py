@@ -178,7 +178,10 @@ def load_manifest_if_present(project: Path) -> dict[str, str] | None:
 
 
 def resolved_vault_dir(project: Path) -> Path:
-    manifest = load_manifest_if_present(project)
+    try:
+        manifest = load_manifest_if_present(project)
+    except ValueError:
+        manifest = None
     if manifest:
         return resolve_project_path(project, manifest["vault"])
     return project / "knowledge-vault"

@@ -55,6 +55,16 @@ Dual install:
 chef install --host both --project .
 ```
 
+Restore one backed-up managed target:
+
+```bash
+chef restore-backup --project . --backup ~/.chef/backups/claude-plugin-chef-20260417T000001Z
+```
+
+Use
+`--force`
+to replace an existing target while preserving one more backup snapshot.
+
 Local wrapper without editable install:
 
 ```bash
@@ -75,6 +85,11 @@ CHEF ships three MCP entry points after install:
 - `chef-knowledge-mcp`
 - `chef-review-mcp`
 - `chef-security-mcp`
+
+## Manifest
+
+Manifest format and validation live in
+[docs/manifest-schema.md](manifest-schema.md)
 
 ## Tests
 

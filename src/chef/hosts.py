@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 import shutil
 from pathlib import Path
 
@@ -23,6 +24,51 @@ def backup_existing_path(target: Path, home: Path, label: str) -> str | None:
     backup_path = backup_dir / f"{label}-{timestamp_label()}"
     shutil.move(str(target), str(backup_path))
     return str(backup_path)
+
+
+def parse_backup_label(backup: Path) -> str:
+    match = re.match(r"(?P<label>.+)-\d{8}T\d{6}Z$", backup.name)
+    if not match:
+        raise ValueError(f"Unrecognized backup name: {backup.name}")
+    return match.group("label")
+
+
+def restore_target(project: Path, home: Path, label: str) -> Path:
+    if label == "claude-commands-chef":
+        return home / ".claude" / "commands" / "chef"
+    if label == "claude-plugin-chef":
+        return home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
+    if label == "project-codex-plugin":
+        return project / ".codex-plugin"
+    if label.startswith("codex-skill-"):
+        skill_name = label.removeprefix("codex-skill-")
+        if not skill_name:
+            raise ValueError(f"Invalid codex skill backup label: {label}")
+        return home / ".codex" / "skills" / skill_name
+    raise ValueError(f"Unsupported backup label: {label}")
+
+
+def restore_backup(project: Path, backup_path: Path, force: bool = False) -> list[str]:
+    home = Path.home()
+    backup = backup_path.expanduser().resolve()
+    if not backup.exists():
+        raise ValueError(f"Backup not found: {backup}")
+
+    label = parse_backup_label(backup)
+    target = restore_target(project, home, label)
+    actions = [f"backup:{backup}"]
+    if target.exists():
+        if not force:
+            raise ValueError(
+                f"Restore target already exists: {target}. Re-run with --force to replace it."
+            )
+        replaced = backup_existing_path(target, home, f"restore-overwrite-{label}")
+        if replaced:
+            actions.append(f"backup:{replaced}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(backup), str(target))
+    actions.append(str(target))
+    return actions
 
 
 def install_claude(project: Path) -> list[str]:

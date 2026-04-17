@@ -56,6 +56,19 @@ def cmd_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_restore_backup(args: argparse.Namespace) -> int:
+    project = detect_project(args)
+    try:
+        restored = host_install.restore_backup(project, Path(args.backup), force=args.force)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print("Restore actions:")
+    for path in restored:
+        print(f"- {path}")
+    return 0
+
+
 def cmd_graph_refresh(args: argparse.Namespace) -> int:
     project = detect_project(args)
     if not scaffold.manifest_path(project).exists():
@@ -170,6 +183,12 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser.add_argument("--project", required=True)
     install_parser.add_argument("--host", choices=["claude", "codex", "both"], default="both")
     install_parser.set_defaults(func=cmd_install)
+
+    restore_parser = sub.add_parser("restore-backup")
+    restore_parser.add_argument("--project", required=True)
+    restore_parser.add_argument("--backup", required=True)
+    restore_parser.add_argument("--force", action="store_true")
+    restore_parser.set_defaults(func=cmd_restore_backup)
 
     graph_parser = sub.add_parser("graph-refresh")
     graph_parser.add_argument("--project", required=True)

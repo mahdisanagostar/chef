@@ -16,8 +16,14 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `src/chef/cli.py` keeps argument parsing and command dispatch.
 - `src/chef/scaffold.py` owns vault creation, compatibility links, manifests, and verification checks.
 - `src/chef/packs.py` owns pack registry and enabled-pack state.
-- `src/chef/hosts.py` owns host-specific install copy logic.
+- `src/chef/hosts.py` owns host-specific install copy logic and backup restore behavior.
 - `src/chef/graphify.py` owns Graphify binary resolution and refresh execution helpers.
+
+## Generated State
+
+- `.chef/chef.json` stores validated host and vault routing data.
+- Manifest schema details live in
+  [docs/manifest-schema.md](manifest-schema.md)
 
 ## Graph-First Protocol
 
