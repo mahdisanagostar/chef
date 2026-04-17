@@ -8,12 +8,13 @@ from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from chef.cli import cmd_graph_refresh, cmd_init, cmd_verify
+import chef.cli as chef_cli
 
 
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
@@ -28,10 +29,10 @@ class ChefCliTests(unittest.TestCase):
     def test_verify_respects_claude_only_projects(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            code, _, _ = run_command(cmd_init, project=str(project), host="claude", vault="new", vault_path=None)
+            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="claude", vault="new", vault_path=None)
             self.assertEqual(code, 0)
 
-            code, _, _ = run_command(cmd_verify, project=str(project))
+            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
     def test_existing_vault_content_survives_init(self) -> None:
@@ -47,7 +48,7 @@ class ChefCliTests(unittest.TestCase):
             (vault / "Graphify" / "index.md").write_text("CUSTOM GRAPH\n", encoding="utf-8")
 
             code, _, _ = run_command(
-                cmd_init,
+                chef_cli.cmd_init,
                 project=str(project),
                 host="codex",
                 vault="existing",
@@ -60,8 +61,10 @@ class ChefCliTests(unittest.TestCase):
 
             manifest = json.loads((project / ".chef" / "chef.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["vault"], str(vault.resolve()))
+            self.assertEqual(manifest["graph_index"], str((vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve()))
+            self.assertEqual(manifest["graph_report"], str((vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve()))
 
-            code, _, _ = run_command(cmd_verify, project=str(project))
+            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
     def test_existing_vault_requires_real_path(self) -> None:
@@ -71,7 +74,7 @@ class ChefCliTests(unittest.TestCase):
             missing_vault = root / "missing-vault"
 
             code, _, stderr = run_command(
-                cmd_init,
+                chef_cli.cmd_init,
                 project=str(project),
                 host="codex",
                 vault="existing",
@@ -83,7 +86,7 @@ class ChefCliTests(unittest.TestCase):
     def test_graph_refresh_dry_run_preserves_existing_graph_outputs(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            code, _, _ = run_command(cmd_init, project=str(project), host="codex", vault="new", vault_path=None)
+            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None)
             self.assertEqual(code, 0)
 
             report = project / "knowledge-vault" / "Graphify" / "graphify-out" / "GRAPH_REPORT.md"
@@ -91,10 +94,50 @@ class ChefCliTests(unittest.TestCase):
             report.write_text("REAL REPORT\n", encoding="utf-8")
             index.write_text("REAL INDEX\n", encoding="utf-8")
 
-            code, _, _ = run_command(cmd_graph_refresh, project=str(project), host="codex", execute=False)
+            code, _, _ = run_command(chef_cli.cmd_graph_refresh, project=str(project), host="codex", execute=False)
             self.assertEqual(code, 0)
             self.assertEqual(report.read_text(encoding="utf-8"), "REAL REPORT\n")
             self.assertEqual(index.read_text(encoding="utf-8"), "REAL INDEX\n")
+
+    def test_new_vault_manifest_uses_project_relative_paths(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(chef_cli.cmd_init, project=str(project), host="both", vault="new", vault_path=None)
+            self.assertEqual(code, 0)
+
+            manifest = json.loads((project / ".chef" / "chef.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["vault"], "knowledge-vault")
+            self.assertEqual(manifest["graph_index"], "knowledge-vault/Graphify/graphify-out/wiki/index.md")
+            self.assertEqual(manifest["graph_report"], "knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md")
+
+    def test_pack_registry_prefers_pack_directory_definitions(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            packs_dir = root / "packs"
+            legacy_file = root / "core" / "packs.json"
+            (packs_dir / "alpha").mkdir(parents=True)
+            (packs_dir / "beta").mkdir(parents=True)
+            legacy_file.parent.mkdir(parents=True)
+            (packs_dir / "alpha" / "pack.json").write_text(
+                json.dumps({"name": "alpha", "default": True, "tools": ["graphify"]}),
+                encoding="utf-8",
+            )
+            (packs_dir / "beta" / "pack.json").write_text(
+                json.dumps({"name": "beta", "enabled_by_default": False, "items": ["secure-code-guardian"]}),
+                encoding="utf-8",
+            )
+            legacy_file.write_text(json.dumps({"legacy": {"enabled_by_default": True, "items": ["old"]}}), encoding="utf-8")
+
+            with patch.object(chef_cli, "PACKS_DIR", packs_dir), patch.object(chef_cli, "PACKS_FILE", legacy_file):
+                registry = chef_cli.read_pack_registry()
+
+            self.assertEqual(
+                registry,
+                {
+                    "alpha": {"enabled_by_default": True, "items": ["graphify"]},
+                    "beta": {"enabled_by_default": False, "items": ["secure-code-guardian"]},
+                },
+            )
 
 
 if __name__ == "__main__":

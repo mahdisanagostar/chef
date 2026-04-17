@@ -46,6 +46,12 @@ Both:
 chef install --host both --project .
 ```
 
+Local development wrapper:
+
+```bash
+./bin/chef --help
+```
+
 ## Tests
 
 ```bash

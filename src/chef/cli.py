@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "templates"
+PACKS_DIR = ROOT / "packs"
 PACKS_FILE = ROOT / "core" / "packs.json"
 
 
@@ -122,6 +123,16 @@ def resolve_project_path(project: Path, value: str) -> Path:
 
 
 def read_pack_registry() -> dict[str, dict[str, object]]:
+    registry: dict[str, dict[str, object]] = {}
+    for pack_file in sorted(PACKS_DIR.glob("*/pack.json")):
+        data = json.loads(pack_file.read_text(encoding="utf-8"))
+        name = data.get("name", pack_file.parent.name)
+        registry[name] = {
+            "enabled_by_default": bool(data.get("enabled_by_default", data.get("default", False))),
+            "items": list(data.get("items", data.get("tools", []))),
+        }
+    if registry:
+        return registry
     return json.loads(PACKS_FILE.read_text(encoding="utf-8"))
 
 

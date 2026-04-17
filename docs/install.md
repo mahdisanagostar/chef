@@ -55,6 +55,12 @@ Dual install:
 chef install --host both --project .
 ```
 
+Local wrapper without editable install:
+
+```bash
+./bin/chef --help
+```
+
 ## Verification
 
 ```bash

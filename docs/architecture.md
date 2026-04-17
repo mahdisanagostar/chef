@@ -8,7 +8,7 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `adapters/claude/` holds Claude-specific commands and plugin metadata.
 - `adapters/codex/` holds Codex-specific plugin metadata, skills, and config templates.
 - `mcp/` holds future MCP bridges for knowledge, review, and security.
-- `packs/` groups optional capability bundles.
+- `packs/` groups optional capability bundles and now acts as the canonical pack registry source.
 - `templates/` stores reusable vault and project scaffolding.
 
 ## Graph-First Protocol
