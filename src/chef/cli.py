@@ -5,10 +5,10 @@ import json
 import sys
 from pathlib import Path
 
+from chef import external, scaffold
 from chef import graphify as graphify_ops
 from chef import hosts as host_install
 from chef import packs as pack_ops
-from chef import scaffold
 
 
 def detect_project(args: argparse.Namespace) -> Path:
@@ -58,13 +58,14 @@ def cmd_install(args: argparse.Namespace) -> int:
         return 1
 
     installed: list[str] = []
-    manual_items: dict[str, str] = {}
+    warnings: list[str] = []
+    errors: list[str] = []
     if args.host in {"claude", "both"}:
         installed.extend(host_install.install_claude(project))
-        for item in claude_items:
-            if item["install"]["method"] != "manual":
-                continue
-            manual_items[str(item["id"])] = str(item["source_url"])
+        result = external.sync_external_items(project, "claude", claude_items)
+        installed.extend(result.actions)
+        warnings.extend(result.warnings)
+        errors.extend(result.errors)
     if args.host in {"codex", "both"}:
         codex_skill_names = {
             str(item["id"])
@@ -72,17 +73,24 @@ def cmd_install(args: argparse.Namespace) -> int:
             if item["install"]["method"] == "bundled" and item["kind"] == "codex_skill"
         }
         installed.extend(host_install.install_codex(project, codex_skill_names))
-        for item in codex_items:
-            if item["install"]["method"] != "manual":
-                continue
-            manual_items[str(item["id"])] = str(item["source_url"])
+        result = external.sync_external_items(project, "codex", codex_items)
+        installed.extend(result.actions)
+        warnings.extend(result.warnings)
+        errors.extend(result.errors)
     print("Installed CHEF assets:")
     for path in installed:
         print(f"- {path}")
-    if manual_items:
-        print("Enabled catalog items requiring manual install:")
-        for item_id in sorted(manual_items):
-            print(f"- {item_id}: {manual_items[item_id]}")
+    warning_lines = sorted(set(warnings))
+    error_lines = sorted(set(errors))
+    if warning_lines:
+        print("Warnings:")
+        for warning in warning_lines:
+            print(f"- {warning}")
+    if error_lines:
+        print("Errors:", file=sys.stderr)
+        for error in error_lines:
+            print(f"- {error}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -144,6 +152,12 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 1
     checks = scaffold.build_verify_checks(project, manifest)
+    if manifest["host"] in {"claude", "both"}:
+        claude_items = pack_ops.resolve_enabled_items(project, "claude")
+        checks.update(external.verify_external_items(project, "claude", claude_items))
+    if manifest["host"] in {"codex", "both"}:
+        codex_items = pack_ops.resolve_enabled_items(project, "codex")
+        checks.update(external.verify_external_items(project, "codex", codex_items))
     print(json.dumps(checks, indent=2))
     return 0 if all(checks.values()) else 1
 

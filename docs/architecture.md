@@ -16,6 +16,7 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 
 - `src/chef/cli.py` keeps argument parsing and command dispatch.
 - `src/chef/catalog.py` owns catalog loading and validation.
+- `src/chef/external.py` owns external source fetch, wrapper generation, Claude plugin sync, and Codex MCP config writes.
 - `src/chef/scaffold.py` owns vault creation, compatibility links, manifests, and verification checks.
 - `src/chef/packs.py` owns pack registry, enabled-pack state, and item resolution.
 - `src/chef/hosts.py` owns host-specific install copy logic, backup restore behavior, and bundled Codex skill selection.
@@ -35,7 +36,9 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - Packs resolve through `catalog/items.json`, not free-form strings.
 - Each pack item must exist in the catalog.
 - `chef pack-status` expands enabled packs into concrete item ids.
-- `chef install` installs bundled Codex skills from that resolved set and reports manual upstream items separately.
+- `chef install` installs bundled Codex skills from that resolved set.
+- Manual catalog items now sync into local skill/plugin targets or Codex MCP config.
+- `chef verify` checks enabled external item targets too.
 
 ## Graph-First Protocol
 

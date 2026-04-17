@@ -38,8 +38,20 @@ def restore_target(project: Path, home: Path, label: str) -> Path:
         return home / ".claude" / "commands" / "chef"
     if label == "claude-plugin-chef":
         return home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
+    if label.startswith("claude-plugin-"):
+        plugin_name = label.removeprefix("claude-plugin-")
+        if not plugin_name:
+            raise ValueError(f"Invalid claude plugin backup label: {label}")
+        return home / ".claude" / "plugins" / "local" / plugin_name
+    if label.startswith("claude-skill-"):
+        skill_name = label.removeprefix("claude-skill-")
+        if not skill_name:
+            raise ValueError(f"Invalid claude skill backup label: {label}")
+        return home / ".claude" / "skills" / skill_name
     if label == "project-codex-plugin":
         return project / ".codex-plugin"
+    if label == "project-codex-mcp":
+        return project / ".codex-plugin" / ".mcp.json"
     if label.startswith("codex-skill-"):
         skill_name = label.removeprefix("codex-skill-")
         if not skill_name:

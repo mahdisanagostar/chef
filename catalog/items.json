@@ -81,7 +81,11 @@
     "kind": "mcp_server",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/haris-musa/excel-mcp-server"
+    "source_url": "https://github.com/haris-musa/excel-mcp-server",
+    "mcp": {
+      "command": "uvx",
+      "args": ["excel-mcp-server", "stdio"]
+    }
   },
   "feature-forge": {
     "name": "Feature Forge",
@@ -151,7 +155,11 @@
     "kind": "mcp_server",
     "hosts": ["codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/PleasePrompto/notebooklm-mcp"
+    "source_url": "https://github.com/PleasePrompto/notebooklm-mcp",
+    "mcp": {
+      "command": "npx",
+      "args": ["-y", "notebooklm-mcp@latest"]
+    }
   },
   "notebooklm-skill": {
     "name": "NotebookLM Skill",

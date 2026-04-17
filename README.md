@@ -47,7 +47,11 @@ Both:
 chef install --host both --project .
 ```
 
-`chef install` installs bundled CHEF assets and prints enabled external catalog items that still need manual setup.
+`chef install` now syncs enabled packs:
+
+- bundled CHEF assets install directly
+- external skills and plugin sources download into managed local targets
+- Codex MCP entries write into `.codex-plugin/.mcp.json` when catalog metadata exists
 
 Restore a managed backup:
 

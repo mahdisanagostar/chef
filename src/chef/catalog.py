@@ -73,6 +73,21 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
             f"Invalid item catalog entry at {source}: always_installed must be boolean."
         )
 
+    mcp = data.get("mcp")
+    if mcp is not None:
+        if not isinstance(mcp, dict):
+            raise ValueError(f"Invalid item catalog entry at {source}: mcp must be an object.")
+        command = mcp.get("command")
+        args = mcp.get("args")
+        if not isinstance(command, str) or not command:
+            raise ValueError(
+                f"Invalid item catalog entry at {source}: mcp.command must be a non-empty string."
+            )
+        if not isinstance(args, list) or any(not isinstance(arg, str) for arg in args):
+            raise ValueError(
+                f"Invalid item catalog entry at {source}: mcp.args must be a list of strings."
+            )
+
     return {
         "id": item_id,
         "name": name,
@@ -83,6 +98,7 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
             **({"path": path_value} if isinstance(path_value, str) else {}),
         },
         **({"source_url": source_url} if isinstance(source_url, str) else {}),
+        **({"mcp": {"command": mcp["command"], "args": list(mcp["args"])}} if mcp else {}),
         "always_installed": always_installed,
     }
 

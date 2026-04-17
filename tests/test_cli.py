@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 chef_cli = importlib.import_module("chef.cli")
 graphify_ops = importlib.import_module("chef.graphify")
+external_ops = importlib.import_module("chef.external")
 host_install = importlib.import_module("chef.hosts")
 pack_ops = importlib.import_module("chef.packs")
 
@@ -38,6 +39,9 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertEqual(code, 0)
 
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -82,6 +86,9 @@ class ChefCliTests(unittest.TestCase):
                 str((vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve()),
             )
 
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -204,7 +211,14 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertEqual(code, 0)
 
-            with patch.object(host_install.Path, "home", return_value=home):
+            with (
+                patch.object(host_install.Path, "home", return_value=home),
+                patch.object(
+                    external_ops,
+                    "sync_external_items",
+                    return_value=external_ops.SyncResult([], [], []),
+                ),
+            ):
                 code, stdout, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex"
                 )
@@ -215,8 +229,7 @@ class ChefCliTests(unittest.TestCase):
                 (home / ".codex" / "skills" / "graph-first-retrieval" / "SKILL.md").exists()
             )
             self.assertTrue((home / ".codex" / "skills" / "skill-finder" / "SKILL.md").exists())
-            self.assertIn("Enabled catalog items requiring manual install:", stdout)
-            self.assertIn("feature-forge:", stdout)
+            self.assertIn("Installed CHEF assets:", stdout)
 
     def test_cmd_install_codex_skips_optional_skills_when_no_pack_enables_them(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -231,7 +244,14 @@ class ChefCliTests(unittest.TestCase):
                 '{"enabled":[]}\n', encoding="utf-8"
             )
 
-            with patch.object(host_install.Path, "home", return_value=home):
+            with (
+                patch.object(host_install.Path, "home", return_value=home),
+                patch.object(
+                    external_ops,
+                    "sync_external_items",
+                    return_value=external_ops.SyncResult([], [], []),
+                ),
+            ):
                 code, _, _ = run_command(chef_cli.cmd_install, project=str(project), host="codex")
 
             self.assertEqual(code, 0)

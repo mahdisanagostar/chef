@@ -58,7 +58,9 @@ chef install --host both --project .
 Pack-aware install behavior:
 
 - bundled Codex skills install only when enabled by packs or marked always-installed in the catalog
-- external catalog items stay manual for now; CHEF prints their upstream URLs after install
+- external skill pages and GitHub sources sync into managed local skill or plugin targets
+- Codex MCP-capable items also merge into `.codex-plugin/.mcp.json`
+- failed external fetches make `chef install` fail with per-item errors
 
 Restore one backed-up managed target:
 

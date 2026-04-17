@@ -1,6 +1,6 @@
 {
   "name": "chef",
   "version": "0.1.0",
-  "description": "CHEF skill and graph-first policy bundle for Codex."
+  "description": "CHEF skill and graph-first policy bundle for Codex.",
+  "mcpServers": "./.mcp.json"
 }
-
