@@ -20,7 +20,6 @@ class ChefExternalTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             project = root / "project"
-            home = root / "home"
             snapshot = external_ops.Snapshot(
                 cache_dir=project / ".chef" / "vendor" / "sample-skill",
                 material_kind="text",
@@ -36,14 +35,11 @@ class ChefExternalTests(unittest.TestCase):
                 "source_url": "https://skills.example/sample-skill",
             }
 
-            with (
-                patch.object(external_ops, "fetch_snapshot", return_value=snapshot),
-                patch.object(external_ops.Path, "home", return_value=home),
-            ):
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
                 result = external_ops.sync_external_items(project, "codex", [item])
 
             self.assertEqual(result.errors, [])
-            target = home / ".codex" / "skills" / "sample-skill" / "SKILL.md"
+            target = project / ".codex" / "skills" / "sample-skill" / "SKILL.md"
             self.assertTrue(target.exists())
             self.assertIn("Imported skill text", target.read_text(encoding="utf-8"))
 
@@ -51,7 +47,6 @@ class ChefExternalTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             project = root / "project"
-            home = root / "home"
             plugin_root = project / ".chef" / "vendor" / "sample-plugin" / "plugin-root"
             (plugin_root / ".claude-plugin").mkdir(parents=True)
             (plugin_root / ".claude-plugin" / "plugin.json").write_text(
@@ -71,22 +66,18 @@ class ChefExternalTests(unittest.TestCase):
                 "source_url": "https://github.com/example/plugin/tree/main/plugins/sample",
             }
 
-            with (
-                patch.object(external_ops, "fetch_snapshot", return_value=snapshot),
-                patch.object(external_ops.Path, "home", return_value=home),
-            ):
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
                 result = external_ops.sync_external_items(project, "claude", [item])
 
             self.assertEqual(result.errors, [])
             self.assertEqual(result.warnings, [])
-            target = home / ".claude" / "plugins" / "local" / "sample-plugin"
+            target = project / ".claude" / "plugins" / "local" / "sample-plugin"
             self.assertTrue((target / ".claude-plugin" / "plugin.json").exists())
 
     def test_sync_external_writes_codex_mcp_config(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             project = root / "project"
-            home = root / "home"
             (project / ".codex-plugin").mkdir(parents=True)
             (project / ".codex-plugin" / "plugin.json").write_text(
                 '{"name":"chef","version":"0.1.0"}\n', encoding="utf-8"
@@ -107,10 +98,7 @@ class ChefExternalTests(unittest.TestCase):
                 "mcp": {"command": "uvx", "args": ["excel-mcp-server", "stdio"]},
             }
 
-            with (
-                patch.object(external_ops, "fetch_snapshot", return_value=snapshot),
-                patch.object(external_ops.Path, "home", return_value=home),
-            ):
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
                 result = external_ops.sync_external_items(project, "codex", [item])
 
             self.assertEqual(result.errors, [])
@@ -130,7 +118,6 @@ class ChefExternalTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             project = root / "project"
-            home = root / "home"
             item = {
                 "id": "fallback-skill",
                 "name": "Fallback Skill",
@@ -140,19 +127,38 @@ class ChefExternalTests(unittest.TestCase):
                 "source_url": "https://example.com/fallback-skill",
             }
 
-            with (
-                patch.object(
-                    external_ops, "fetch_snapshot", side_effect=external_ops.InstallError("boom")
-                ),
-                patch.object(external_ops.Path, "home", return_value=home),
+            with patch.object(
+                external_ops, "fetch_snapshot", side_effect=external_ops.InstallError("boom")
             ):
                 result = external_ops.sync_external_items(project, "codex", [item])
 
             self.assertEqual(result.errors, [])
             self.assertTrue(result.warnings)
-            target = home / ".codex" / "skills" / "fallback-skill" / "SKILL.md"
+            target = project / ".codex" / "skills" / "fallback-skill" / "SKILL.md"
             self.assertTrue(target.exists())
             self.assertIn("could not fetch upstream content", target.read_text(encoding="utf-8"))
+
+    def test_sync_external_uses_cached_snapshot_when_offline(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            cache_dir = project / ".chef" / "vendor" / "cached-skill"
+            cache_dir.mkdir(parents=True)
+            (cache_dir / "SKILL.md").write_text("# Cached Skill\n", encoding="utf-8")
+            item = {
+                "id": "cached-skill",
+                "name": "Cached Skill",
+                "kind": "skill",
+                "hosts": ["codex"],
+                "install": {"method": "manual"},
+                "source_url": "https://example.com/cached-skill",
+            }
+
+            result = external_ops.sync_external_items(project, "codex", [item], offline=True)
+
+            self.assertEqual(result.errors, [])
+            self.assertEqual(result.warnings, [])
+            self.assertTrue((project / ".codex" / "skills" / "cached-skill" / "SKILL.md").exists())
 
     def test_fetch_snapshot_falls_back_from_blob_to_repo_path(self) -> None:
         with TemporaryDirectory() as tmp:

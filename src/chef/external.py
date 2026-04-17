@@ -13,6 +13,14 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from chef.hosts import backup_existing_path
+from chef.paths import (
+    claude_plugin_dir,
+    claude_skill_dir,
+    codex_mcp_file,
+    codex_plugin_file,
+    codex_skill_dir,
+    vendor_dir,
+)
 
 try:
     import certifi
@@ -92,27 +100,22 @@ class HtmlTextExtractor(HTMLParser):
 
 
 def vendor_root(project: Path) -> Path:
-    return project / ".chef" / "vendor"
-
-
-def codex_skill_target(home: Path, item_id: str) -> Path:
-    return home / ".codex" / "skills" / item_id
-
-
-def claude_skill_target(home: Path, item_id: str) -> Path:
-    return home / ".claude" / "skills" / item_id
-
-
-def claude_plugin_target(home: Path, item_id: str) -> Path:
-    return home / ".claude" / "plugins" / "local" / item_id
+    return vendor_dir(project)
 
 
 def codex_mcp_path(project: Path) -> Path:
-    return project / ".codex-plugin" / ".mcp.json"
+    return codex_mcp_file(project)
 
 
 def codex_plugin_path(project: Path) -> Path:
-    return project / ".codex-plugin" / "plugin.json"
+    return codex_plugin_file(project)
+
+
+def offline_enabled(explicit: bool | None = None) -> bool:
+    if explicit is not None:
+        return explicit
+    value = os.environ.get("CHEF_OFFLINE", "")
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def parse_github_url(source_url: str) -> GitHubSource | None:
@@ -191,6 +194,40 @@ def ensure_clean_cache(project: Path, item_id: str) -> Path:
     return cache_dir
 
 
+def snapshot_from_cache(project: Path, item: dict[str, object]) -> Snapshot | None:
+    cache_dir = vendor_root(project) / str(item["id"])
+    if not cache_dir.exists():
+        return None
+
+    skill_dir = detect_skill_dir(cache_dir, str(item["id"]))
+    if skill_dir is not None:
+        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=skill_dir)
+
+    plugin_dir = detect_claude_plugin_dir(cache_dir)
+    if plugin_dir is not None:
+        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=plugin_dir)
+
+    for filename in ("SKILL.md", "README.md"):
+        path = cache_dir / filename
+        if path.exists():
+            return Snapshot(cache_dir=cache_dir, material_kind="file", material_path=path)
+
+    for filename in ("page.txt", "fallback.txt"):
+        path = cache_dir / filename
+        if path.exists():
+            return Snapshot(
+                cache_dir=cache_dir,
+                material_kind="text",
+                text=path.read_text(encoding="utf-8", errors="ignore"),
+            )
+
+    directories = [path for path in cache_dir.iterdir() if path.is_dir()]
+    if len(directories) == 1:
+        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=directories[0])
+
+    return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=cache_dir)
+
+
 def extract_html_text(payload: bytes) -> str:
     parser = HtmlTextExtractor()
     parser.feed(payload.decode("utf-8", errors="ignore"))
@@ -200,9 +237,15 @@ def extract_html_text(payload: bytes) -> str:
     return text
 
 
-def fetch_snapshot(project: Path, item: dict[str, object]) -> Snapshot:
+def fetch_snapshot(project: Path, item: dict[str, object], offline: bool = False) -> Snapshot:
     item_id = str(item["id"])
     source_url = str(item["source_url"])
+    cached = snapshot_from_cache(project, item)
+    if offline:
+        if cached is not None:
+            return cached
+        raise InstallError(f"Offline mode enabled and no cached snapshot exists for {item_id}.")
+
     cache_dir = ensure_clean_cache(project, item_id)
     github = parse_github_url(source_url)
 
@@ -353,14 +396,10 @@ def build_wrapper_skill(
 
 
 def backup_and_copy_skill(
-    home: Path,
-    target: Path,
-    label: str,
-    skill_dir: Path | None,
-    skill_content: str,
+    project: Path, target: Path, label: str, skill_dir: Path | None, skill_content: str
 ) -> list[str]:
     actions: list[str] = []
-    backup = backup_existing_path(target, home, label)
+    backup = backup_existing_path(project, target, label)
     if backup:
         actions.append(f"backup:{backup}")
     if skill_dir is not None:
@@ -374,7 +413,6 @@ def backup_and_copy_skill(
 
 def install_skill_like_item(
     project: Path,
-    home: Path,
     host: str,
     item: dict[str, object],
     snapshot: Snapshot,
@@ -382,17 +420,17 @@ def install_skill_like_item(
 ) -> list[str]:
     item_id = str(item["id"])
     if host == "codex":
-        target = codex_skill_target(home, item_id)
+        target = codex_skill_dir(project, item_id)
     else:
-        target = claude_skill_target(home, item_id)
+        target = claude_skill_dir(project, item_id)
     label = f"{host}-skill-{item_id}"
     skill_dir = snapshot.material_path and detect_skill_dir(snapshot.material_path, item_id)
     skill_content = build_wrapper_skill(item, snapshot, extra_lines=extra_lines)
-    return backup_and_copy_skill(home, target, label, skill_dir, skill_content)
+    return backup_and_copy_skill(project, target, label, skill_dir, skill_content)
 
 
 def install_claude_plugin_item(
-    home: Path, item: dict[str, object], snapshot: Snapshot
+    project: Path, item: dict[str, object], snapshot: Snapshot
 ) -> tuple[list[str], list[str]]:
     item_id = str(item["id"])
     plugin_dir = snapshot.material_path and detect_claude_plugin_dir(snapshot.material_path)
@@ -403,9 +441,9 @@ def install_claude_plugin_item(
         )
         return [], [warning]
 
-    target = claude_plugin_target(home, item_id)
+    target = claude_plugin_dir(project, item_id)
     actions: list[str] = []
-    backup = backup_existing_path(target, home, f"claude-plugin-{item_id}")
+    backup = backup_existing_path(project, target, f"claude-plugin-{item_id}")
     if backup:
         actions.append(f"backup:{backup}")
     copy_directory(plugin_dir, target)
@@ -448,17 +486,29 @@ def merge_codex_mcp_entries(project: Path, items: list[dict[str, object]]) -> li
             "args": list(mcp["args"]),
         }
 
+    desired = json.dumps({"mcpServers": servers}, indent=2) + "\n"
+    actions: list[str] = []
     mcp_path.parent.mkdir(parents=True, exist_ok=True)
-    mcp_path.write_text(json.dumps({"mcpServers": servers}, indent=2) + "\n", encoding="utf-8")
-    return [str(mcp_path)]
+    if mcp_path.exists():
+        current = mcp_path.read_text(encoding="utf-8")
+        if current == desired:
+            return [str(mcp_path)]
+        backup = backup_existing_path(project, mcp_path, "project-codex-mcp")
+        if backup:
+            actions.append(f"backup:{backup}")
+    mcp_path.write_text(desired, encoding="utf-8")
+    actions.append(str(mcp_path))
+    return actions
 
 
-def sync_external_items(project: Path, host: str, items: list[dict[str, object]]) -> SyncResult:
-    home = Path.home()
+def sync_external_items(
+    project: Path, host: str, items: list[dict[str, object]], offline: bool = False
+) -> SyncResult:
     actions: list[str] = []
     warnings: list[str] = []
     errors: list[str] = []
     codex_mcp_items: list[dict[str, object]] = []
+    offline_mode = offline_enabled(offline)
 
     for item in items:
         if item["install"]["method"] != "manual":
@@ -466,7 +516,7 @@ def sync_external_items(project: Path, host: str, items: list[dict[str, object]]
         snapshot: Snapshot
         degraded = False
         try:
-            snapshot = fetch_snapshot(project, item)
+            snapshot = fetch_snapshot(project, item, offline=offline_mode)
         except (InstallError, urllib.error.URLError) as exc:
             snapshot = fallback_snapshot(project, item, exc)
             degraded = True
@@ -477,14 +527,15 @@ def sync_external_items(project: Path, host: str, items: list[dict[str, object]]
         try:
             kind = str(item["kind"])
             if host == "claude" and kind == "plugin":
-                plugin_actions, plugin_warnings = install_claude_plugin_item(home, item, snapshot)
+                plugin_actions, plugin_warnings = install_claude_plugin_item(
+                    project, item, snapshot
+                )
                 actions.extend(plugin_actions)
                 warnings.extend(plugin_warnings)
                 if plugin_warnings:
                     actions.extend(
                         install_skill_like_item(
                             project,
-                            home,
                             host,
                             item,
                             snapshot,
@@ -499,7 +550,6 @@ def sync_external_items(project: Path, host: str, items: list[dict[str, object]]
                 actions.extend(
                     install_skill_like_item(
                         project,
-                        home,
                         host,
                         item,
                         snapshot,
@@ -512,9 +562,7 @@ def sync_external_items(project: Path, host: str, items: list[dict[str, object]]
             else:
                 extra_lines = ["Upstream fetch degraded."] if degraded else None
                 actions.extend(
-                    install_skill_like_item(
-                        project, home, host, item, snapshot, extra_lines=extra_lines
-                    )
+                    install_skill_like_item(project, host, item, snapshot, extra_lines=extra_lines)
                 )
         except (InstallError, OSError, json.JSONDecodeError) as exc:
             errors.append(f"{item['id']}: {exc}")
@@ -531,18 +579,19 @@ def sync_external_items(project: Path, host: str, items: list[dict[str, object]]
 def verify_external_items(
     project: Path, host: str, items: list[dict[str, object]]
 ) -> dict[str, bool]:
-    home = Path.home()
     checks: dict[str, bool] = {}
     for item in items:
         item_id = str(item["id"])
         kind = str(item["kind"])
         if item["install"]["method"] == "bundled":
-            if host == "codex" and kind == "codex_skill":
-                checks[f"item:{item_id}"] = codex_skill_target(home, item_id).exists()
+            if host == "codex" and kind in {"codex_skill", "skill"}:
+                checks[f"item:{item_id}"] = codex_skill_dir(project, item_id).exists()
+            elif host == "claude" and kind == "skill":
+                checks[f"item:{item_id}"] = claude_skill_dir(project, item_id).exists()
             continue
 
         if host == "codex":
-            checks[f"item:{item_id}"] = codex_skill_target(home, item_id).exists()
+            checks[f"item:{item_id}"] = codex_skill_dir(project, item_id).exists()
             if kind == "mcp_server" and item.get("mcp"):
                 try:
                     mcp_data = json.loads(codex_mcp_path(project).read_text(encoding="utf-8"))
@@ -553,9 +602,9 @@ def verify_external_items(
         else:
             if kind == "plugin":
                 checks[f"item:{item_id}"] = (
-                    claude_plugin_target(home, item_id).exists()
-                    or claude_skill_target(home, item_id).exists()
+                    claude_plugin_dir(project, item_id).exists()
+                    or claude_skill_dir(project, item_id).exists()
                 )
             else:
-                checks[f"item:{item_id}"] = claude_skill_target(home, item_id).exists()
+                checks[f"item:{item_id}"] = claude_skill_dir(project, item_id).exists()
     return checks

@@ -7,6 +7,10 @@ build/
 *.pyc
 *.egg-info/
 .chef/
+.claude/commands/
+.claude/plugins/
+.claude/skills/
+.codex/skills/
 knowledge-vault/.obsidian/
 knowledge-vault/Graphify/graphify-out/cache/
 knowledge-vault/Graphify/graphify-out/*.json

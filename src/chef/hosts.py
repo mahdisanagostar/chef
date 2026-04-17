@@ -5,21 +5,31 @@ import re
 import shutil
 from pathlib import Path
 
-from chef.paths import ROOT
+from chef.paths import (
+    ROOT,
+    backups_dir,
+    claude_commands_dir,
+    claude_plugin_dir,
+    claude_plugin_manifest_dir,
+    claude_skill_dir,
+    codex_mcp_file,
+    codex_plugin_dir,
+    codex_skill_dir,
+)
 
 
-def backup_root(home: Path) -> Path:
-    return home / ".chef" / "backups"
+def backup_root(project: Path) -> Path:
+    return backups_dir(project)
 
 
 def timestamp_label() -> str:
     return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
-def backup_existing_path(target: Path, home: Path, label: str) -> str | None:
+def backup_existing_path(project: Path, target: Path, label: str) -> str | None:
     if not target.exists():
         return None
-    backup_dir = backup_root(home)
+    backup_dir = backup_root(project)
     backup_dir.mkdir(parents=True, exist_ok=True)
     backup_path = backup_dir / f"{label}-{timestamp_label()}"
     shutil.move(str(target), str(backup_path))
@@ -33,48 +43,47 @@ def parse_backup_label(backup: Path) -> str:
     return match.group("label")
 
 
-def restore_target(project: Path, home: Path, label: str) -> Path:
+def restore_target(project: Path, label: str) -> Path:
     if label == "claude-commands-chef":
-        return home / ".claude" / "commands" / "chef"
+        return claude_commands_dir(project)
     if label == "claude-plugin-chef":
-        return home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
+        return claude_plugin_manifest_dir(project, "chef")
     if label.startswith("claude-plugin-"):
         plugin_name = label.removeprefix("claude-plugin-")
         if not plugin_name:
             raise ValueError(f"Invalid claude plugin backup label: {label}")
-        return home / ".claude" / "plugins" / "local" / plugin_name
+        return claude_plugin_dir(project, plugin_name)
     if label.startswith("claude-skill-"):
         skill_name = label.removeprefix("claude-skill-")
         if not skill_name:
             raise ValueError(f"Invalid claude skill backup label: {label}")
-        return home / ".claude" / "skills" / skill_name
+        return claude_skill_dir(project, skill_name)
     if label == "project-codex-plugin":
-        return project / ".codex-plugin"
+        return codex_plugin_dir(project)
     if label == "project-codex-mcp":
-        return project / ".codex-plugin" / ".mcp.json"
+        return codex_mcp_file(project)
     if label.startswith("codex-skill-"):
         skill_name = label.removeprefix("codex-skill-")
         if not skill_name:
             raise ValueError(f"Invalid codex skill backup label: {label}")
-        return home / ".codex" / "skills" / skill_name
+        return codex_skill_dir(project, skill_name)
     raise ValueError(f"Unsupported backup label: {label}")
 
 
 def restore_backup(project: Path, backup_path: Path, force: bool = False) -> list[str]:
-    home = Path.home()
     backup = backup_path.expanduser().resolve()
     if not backup.exists():
         raise ValueError(f"Backup not found: {backup}")
 
     label = parse_backup_label(backup)
-    target = restore_target(project, home, label)
+    target = restore_target(project, label)
     actions = [f"backup:{backup}"]
     if target.exists():
         if not force:
             raise ValueError(
                 f"Restore target already exists: {target}. Re-run with --force to replace it."
             )
-        replaced = backup_existing_path(target, home, f"restore-overwrite-{label}")
+        replaced = backup_existing_path(project, target, f"restore-overwrite-{label}")
         if replaced:
             actions.append(f"backup:{replaced}")
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -83,16 +92,44 @@ def restore_backup(project: Path, backup_path: Path, force: bool = False) -> lis
     return actions
 
 
-def install_claude(project: Path) -> list[str]:
-    home = Path.home()
+def copy_asset(src: Path, dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if src.is_dir():
+        shutil.copytree(src, dest)
+        return
+
+    dest.mkdir(parents=True, exist_ok=True)
+    target_file = dest / ("SKILL.md" if src.suffix.lower() == ".md" else src.name)
+    shutil.copy2(src, target_file)
+
+
+def install_bundled_skills(project: Path, host: str, items: list[dict[str, object]]) -> list[str]:
     installed: list[str] = []
-    command_target = home / ".claude" / "commands" / "chef"
-    plugin_target = home / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"
+    for item in items:
+        item_id = str(item["id"])
+        target = codex_skill_dir(project, item_id) if host == "codex" else claude_skill_dir(
+            project, item_id
+        )
+        backup = backup_existing_path(project, target, f"{host}-skill-{item_id}")
+        if backup:
+            installed.append(f"backup:{backup}")
+        source = ROOT / str(item["install"]["path"])
+        copy_asset(source, target)
+        installed.append(str(target))
+    return installed
+
+
+def install_claude(
+    project: Path, bundled_items: list[dict[str, object]] | None = None
+) -> list[str]:
+    installed: list[str] = []
+    command_target = claude_commands_dir(project)
+    plugin_target = claude_plugin_manifest_dir(project, "chef")
     for target, label in (
         (command_target, "claude-commands-chef"),
         (plugin_target, "claude-plugin-chef"),
     ):
-        backup = backup_existing_path(target, home, label)
+        backup = backup_existing_path(project, target, label)
         if backup:
             installed.append(f"backup:{backup}")
     command_target.mkdir(parents=True, exist_ok=True)
@@ -105,31 +142,16 @@ def install_claude(project: Path) -> list[str]:
         plugin_target / "plugin.json",
     )
     installed.extend([str(command_target), str(plugin_target)])
+    installed.extend(install_bundled_skills(project, "claude", bundled_items or []))
     return installed
 
 
-def install_codex(project: Path, skill_names: set[str] | None = None) -> list[str]:
-    home = Path.home()
-    target = home / ".codex" / "skills"
-    target.mkdir(parents=True, exist_ok=True)
-    src = ROOT / "adapters" / "codex" / "skills"
+def install_codex(project: Path, bundled_items: list[dict[str, object]] | None = None) -> list[str]:
     installed: list[str] = []
-    selected = None if skill_names is None else set(skill_names)
-    for skill_dir in src.iterdir():
-        if not skill_dir.is_dir():
-            continue
-        if selected is not None and skill_dir.name not in selected:
-            continue
-        dest = target / skill_dir.name
-        backup = backup_existing_path(dest, home, f"codex-skill-{skill_dir.name}")
-        if backup:
-            installed.append(f"backup:{backup}")
-        shutil.copytree(skill_dir, dest)
-        installed.append(str(dest))
-
+    installed.extend(install_bundled_skills(project, "codex", bundled_items or []))
     plugin_src = ROOT / "adapters" / "codex" / ".codex-plugin"
-    plugin_dest = project / ".codex-plugin"
-    backup = backup_existing_path(plugin_dest, home, "project-codex-plugin")
+    plugin_dest = codex_plugin_dir(project)
+    backup = backup_existing_path(project, plugin_dest, "project-codex-plugin")
     if backup:
         installed.append(f"backup:{backup}")
     shutil.copytree(plugin_src, plugin_dest)

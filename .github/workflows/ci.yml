@@ -7,6 +7,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      CHEF_OFFLINE: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -38,3 +40,10 @@ jobs:
           ./bin/chef --help
           ./bin/chef restore-backup --help
           ./bin/chef pack-status --project .
+
+      - name: Smoke test local runtime install
+        run: |
+          tmpdir="$(mktemp -d)"
+          ./bin/chef init --project "$tmpdir" --host codex --vault new
+          ./bin/chef install --project "$tmpdir" --host codex --offline
+          ./bin/chef verify --project "$tmpdir"

@@ -57,15 +57,16 @@ chef install --host both --project .
 
 Pack-aware install behavior:
 
-- bundled Codex skills install only when enabled by packs or marked always-installed in the catalog
-- external skill pages and GitHub sources sync into managed local skill or plugin targets
-- Codex MCP-capable items also merge into `.codex-plugin/.mcp.json`
-- failed external fetches make `chef install` fail with per-item errors
+- bundled CHEF skills install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
+- external skill pages and GitHub sources cache under `.chef/vendor/` and sync into project-local targets
+- Codex MCP-capable items also merge into project-local `.codex-plugin/.mcp.json`
+- `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
+- managed backups stay under `.chef/backups/`
 
 Restore one backed-up managed target:
 
 ```bash
-chef restore-backup --project . --backup ~/.chef/backups/claude-plugin-chef-20260417T000001Z
+chef restore-backup --project . --backup ./.chef/backups/claude-plugin-chef-20260417T000001Z
 ```
 
 Use
@@ -81,6 +82,7 @@ Local wrapper without editable install:
 ## Verification
 
 ```bash
+chef install --host both --project . --offline
 chef verify --project .
 chef graph-refresh --project . --host codex --execute
 ```

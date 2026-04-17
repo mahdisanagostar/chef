@@ -7,6 +7,7 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `core/` holds policy, routing, manifests, and orchestration extraction.
 - `adapters/claude/` holds Claude-specific commands and plugin metadata.
 - `adapters/codex/` holds Codex-specific plugin metadata, skills, and config templates.
+- `adapters/shared/` holds vendored cross-host bundled skills.
 - `catalog/` maps capability ids to host support, upstream source, and install method.
 - `mcp/` holds future MCP bridges for knowledge, review, and security.
 - `packs/` groups optional capability bundles and now acts as the canonical pack registry source.
@@ -26,19 +27,27 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 
 - `.chef/chef.json` stores validated host and vault routing data.
 - `.chef/enabled-packs.json` stores selected pack ids.
+- `.chef/vendor/` stores cached upstream material snapshots.
+- `.chef/backups/` stores managed rollback snapshots for generated runtime targets.
+- `.claude/commands/`, `.claude/plugins/`, and `.claude/skills/` store project-local Claude runtime output.
+- `.codex/skills/` stores project-local Codex skills.
+- `.codex-plugin/` stores project-local Codex plugin and MCP config.
 - Manifest schema details live in
   [docs/manifest-schema.md](manifest-schema.md)
 - Catalog schema details live in
   [docs/catalog-schema.md](catalog-schema.md)
+
+CHEF no longer writes runtime assets into home directories. Install output stays inside the project tree so the repo behaves like a self-contained workspace image.
 
 ## Pack Resolution
 
 - Packs resolve through `catalog/items.json`, not free-form strings.
 - Each pack item must exist in the catalog.
 - `chef pack-status` expands enabled packs into concrete item ids.
-- `chef install` installs bundled Codex skills from that resolved set.
-- Manual catalog items now sync into local skill/plugin targets or Codex MCP config.
-- `chef verify` checks enabled external item targets too.
+- `chef install` materializes bundled items into project-local host runtime from that resolved set.
+- Manual catalog items sync into `.chef/vendor/` first and install into local skill/plugin targets or Codex MCP config.
+- `chef install --offline` uses cache-first behavior and wrapper fallbacks.
+- `chef verify` checks enabled item targets inside the project tree.
 
 ## Graph-First Protocol
 

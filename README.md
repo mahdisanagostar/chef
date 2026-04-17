@@ -22,6 +22,7 @@ source .venv/bin/activate
 pip install -e .
 pip install -e '.[graph]'
 chef init --project . --host both --vault new
+chef install --host both --project . --offline
 chef verify --project .
 ```
 
@@ -49,14 +50,15 @@ chef install --host both --project .
 
 `chef install` now syncs enabled packs:
 
-- bundled CHEF assets install directly
-- external skills and plugin sources download into managed local targets
-- Codex MCP entries write into `.codex-plugin/.mcp.json` when catalog metadata exists
+- bundled CHEF assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
+- external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
+- `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
+- Codex MCP entries write into project-local `.codex-plugin/.mcp.json` when catalog metadata exists
 
 Restore a managed backup:
 
 ```bash
-chef restore-backup --project . --backup ~/.chef/backups/codex-skill-skill-finder-20260417T000000Z
+chef restore-backup --project . --backup ./.chef/backups/codex-skill-skill-finder-20260417T000000Z
 ```
 
 Local development wrapper:
@@ -76,6 +78,7 @@ python -m unittest discover -s tests -v
 - Query graph before raw source.
 - Treat `chef/knowledge-vault/Graphify/graphify-out/wiki/index.md` as authoritative codebase index.
 - Keep repo-root `graphify-out/` as compatibility symlink into vault-owned graph output.
+- Keep generated runtime state inside project boundaries.
 - Allow raw file reads only when user explicitly asks.
 - Use native host expert routing, not cross-vendor routing.
 

@@ -214,7 +214,7 @@
     "name": "Remotion Best Practices",
     "kind": "skill",
     "hosts": ["claude", "codex"],
-    "install": {"method": "manual"},
+    "install": {"method": "bundled", "path": "adapters/shared/skills/remotion-best-practices"},
     "source_url": "https://github.com/openclaw/skills/blob/main/skills/am-will/remotion-best-practices/"
   },
   "ruflo": {
@@ -290,7 +290,7 @@
     "name": "Using Git Worktrees",
     "kind": "skill",
     "hosts": ["claude", "codex"],
-    "install": {"method": "manual"},
+    "install": {"method": "bundled", "path": "adapters/shared/skills/using-git-worktrees"},
     "source_url": "https://github.com/obra/superpowers/blob/main/skills/using-git-worktrees"
   },
   "ux-heuristics": {

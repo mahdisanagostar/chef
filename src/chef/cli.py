@@ -61,19 +61,20 @@ def cmd_install(args: argparse.Namespace) -> int:
     warnings: list[str] = []
     errors: list[str] = []
     if args.host in {"claude", "both"}:
-        installed.extend(host_install.install_claude(project))
-        result = external.sync_external_items(project, "claude", claude_items)
+        bundled_claude_items = [
+            item for item in claude_items if item["install"]["method"] == "bundled"
+        ]
+        installed.extend(host_install.install_claude(project, bundled_claude_items))
+        result = external.sync_external_items(project, "claude", claude_items, offline=args.offline)
         installed.extend(result.actions)
         warnings.extend(result.warnings)
         errors.extend(result.errors)
     if args.host in {"codex", "both"}:
-        codex_skill_names = {
-            str(item["id"])
-            for item in codex_items
-            if item["install"]["method"] == "bundled" and item["kind"] == "codex_skill"
-        }
-        installed.extend(host_install.install_codex(project, codex_skill_names))
-        result = external.sync_external_items(project, "codex", codex_items)
+        bundled_codex_items = [
+            item for item in codex_items if item["install"]["method"] == "bundled"
+        ]
+        installed.extend(host_install.install_codex(project, bundled_codex_items))
+        result = external.sync_external_items(project, "codex", codex_items, offline=args.offline)
         installed.extend(result.actions)
         warnings.extend(result.warnings)
         errors.extend(result.errors)
@@ -152,12 +153,16 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 1
     checks = scaffold.build_verify_checks(project, manifest)
-    if manifest["host"] in {"claude", "both"}:
-        claude_items = pack_ops.resolve_enabled_items(project, "claude")
-        checks.update(external.verify_external_items(project, "claude", claude_items))
-    if manifest["host"] in {"codex", "both"}:
-        codex_items = pack_ops.resolve_enabled_items(project, "codex")
-        checks.update(external.verify_external_items(project, "codex", codex_items))
+    try:
+        if manifest["host"] in {"claude", "both"}:
+            claude_items = pack_ops.resolve_enabled_items(project, "claude")
+            checks.update(external.verify_external_items(project, "claude", claude_items))
+        if manifest["host"] in {"codex", "both"}:
+            codex_items = pack_ops.resolve_enabled_items(project, "codex")
+            checks.update(external.verify_external_items(project, "codex", codex_items))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     print(json.dumps(checks, indent=2))
     return 0 if all(checks.values()) else 1
 
@@ -241,6 +246,7 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser = sub.add_parser("install")
     install_parser.add_argument("--project", required=True)
     install_parser.add_argument("--host", choices=["claude", "codex", "both"], default="both")
+    install_parser.add_argument("--offline", action="store_true")
     install_parser.set_defaults(func=cmd_install)
 
     restore_parser = sub.add_parser("restore-backup")
