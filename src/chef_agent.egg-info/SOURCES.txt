@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/chef/__init__.py
+src/chef/cli.py
+src/chef/mcp/__init__.py
+src/chef/mcp/common.py
+src/chef/mcp/knowledge.py
+src/chef/mcp/review.py
+src/chef/mcp/security.py
+src/chef_agent.egg-info/PKG-INFO
+src/chef_agent.egg-info/SOURCES.txt
+src/chef_agent.egg-info/dependency_links.txt
+src/chef_agent.egg-info/entry_points.txt
+src/chef_agent.egg-info/requires.txt
+src/chef_agent.egg-info/top_level.txt

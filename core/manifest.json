@@ -1,0 +1,22 @@
+{
+  "name": "CHEF",
+  "version": "0.1.0",
+  "graph_policy": "graph-first",
+  "project_root": "chef/",
+  "default_host_mode": "both",
+  "default_vault": "knowledge-vault",
+  "default_graph_index": "knowledge-vault/Graphify/graphify-out/wiki/index.md",
+  "default_graph_report": "knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md",
+  "routing": {
+    "claude": {
+      "executor": "sonnet",
+      "expert": "opus"
+    },
+    "codex": {
+      "default_model": "gpt-5.4-mini",
+      "default_reasoning": "high",
+      "expert_model": "gpt-5.4",
+      "expert_reasoning": "xhigh"
+    }
+  }
+}

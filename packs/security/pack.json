@@ -1,0 +1,10 @@
+{
+  "name": "security",
+  "default": false,
+  "tools": [
+    "secure-code-guardian",
+    "security-guidance",
+    "owasp-security"
+  ]
+}
+

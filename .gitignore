@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__/
+.pytest_cache/
+.venv/
+dist/
+build/
+*.pyc
+.chef/
+knowledge-vault/.obsidian/
+knowledge-vault/Graphify/graphify-out/cache/
+knowledge-vault/Graphify/graphify-out/*.json
+knowledge-vault/Graphify/graphify-out/*.html
+knowledge-vault/Graphify/graphify-out/wiki/**/*.md
+!knowledge-vault/Graphify/graphify-out/wiki/index.md
+!knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md

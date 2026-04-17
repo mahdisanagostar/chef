@@ -1,0 +1,10 @@
+{
+  "name": "business",
+  "default": false,
+  "tools": [
+    "claude-seo",
+    "marketingskills",
+    "excel-mcp-server"
+  ]
+}
+

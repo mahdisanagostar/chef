@@ -1,0 +1,15 @@
+{
+  "name": "core",
+  "default": true,
+  "tools": [
+    "graphify",
+    "feature-forge",
+    "spec-miner",
+    "code-reviewer",
+    "secure-code-guardian",
+    "using-git-worktrees",
+    "frontend-design",
+    "skill-finder"
+  ]
+}
+

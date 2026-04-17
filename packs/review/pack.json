@@ -1,0 +1,10 @@
+{
+  "name": "review",
+  "default": false,
+  "tools": [
+    "code-review-graph",
+    "anthropic-code-review",
+    "the-fool"
+  ]
+}
+

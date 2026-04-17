@@ -1,0 +1,5 @@
+[console_scripts]
+chef = chef.cli:main
+chef-knowledge-mcp = chef.mcp.knowledge:main
+chef-review-mcp = chef.mcp.review:main
+chef-security-mcp = chef.mcp.security:main

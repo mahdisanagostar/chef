@@ -1,0 +1,11 @@
+model = "gpt-5.4-mini"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+
+[features]
+multi_agent = true
+
+[profiles.chef-expert]
+model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+

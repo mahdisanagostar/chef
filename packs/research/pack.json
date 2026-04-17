@@ -1,0 +1,10 @@
+{
+  "name": "research",
+  "default": false,
+  "tools": [
+    "notebooklm-mcp",
+    "rag-architect",
+    "obsidian-skills"
+  ]
+}
+

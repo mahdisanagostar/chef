@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chef-agent"
+version = "0.1.0"
+description = "CHEF dual-host enhancement package for Claude and Codex."
+requires-python = ">=3.11"
+authors = [{ name = "Mahdi" }]
+readme = "README.md"
+dependencies = [
+  "mcp[cli]>=1.17.0",
+]
+
+[project.scripts]
+chef = "chef.cli:main"
+chef-knowledge-mcp = "chef.mcp.knowledge:main"
+chef-review-mcp = "chef.mcp.review:main"
+chef-security-mcp = "chef.mcp.security:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
