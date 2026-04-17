@@ -8,6 +8,9 @@ from pathlib import Path
 
 from chef.paths import TEMPLATES
 
+ALLOWED_HOSTS = {"claude", "codex", "both"}
+REQUIRED_MANIFEST_KEYS = {"project", "host", "vault", "generated_at", "graph_index", "graph_report"}
+
 
 def write_file(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,6 +114,10 @@ def write_manifest(project: Path, host: str, vault_path: Path) -> None:
     write_file(project / ".chef" / "chef.json", json.dumps(build_manifest(project, host, vault_path), indent=2) + "\n")
 
 
+def manifest_path(project: Path) -> Path:
+    return project / ".chef" / "chef.json"
+
+
 def resolve_project_path(project: Path, value: str) -> Path:
     path = Path(value).expanduser()
     if path.is_absolute():
@@ -118,8 +125,48 @@ def resolve_project_path(project: Path, value: str) -> Path:
     return (project / path).resolve()
 
 
+def validate_manifest(data: object, source: Path | None = None) -> dict[str, str]:
+    if not isinstance(data, dict):
+        raise ValueError(f"Invalid manifest at {source}: expected JSON object.")
+
+    missing = sorted(REQUIRED_MANIFEST_KEYS.difference(data))
+    if missing:
+        raise ValueError(f"Invalid manifest at {source}: missing keys: {', '.join(missing)}")
+
+    host = data.get("host")
+    if not isinstance(host, str) or host not in ALLOWED_HOSTS:
+        raise ValueError(f"Invalid manifest at {source}: unsupported host {host!r}")
+
+    manifest: dict[str, str] = {}
+    for key in REQUIRED_MANIFEST_KEYS:
+        value = data.get(key)
+        if not isinstance(value, str) or not value:
+            raise ValueError(f"Invalid manifest at {source}: {key} must be a non-empty string.")
+        manifest[key] = value
+    return manifest
+
+
 def load_manifest(project: Path) -> dict[str, str]:
-    return json.loads((project / ".chef" / "chef.json").read_text(encoding="utf-8"))
+    path = manifest_path(project)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid manifest at {path}: {exc.msg}") from exc
+    return validate_manifest(data, source=path)
+
+
+def load_manifest_if_present(project: Path) -> dict[str, str] | None:
+    path = manifest_path(project)
+    if not path.exists():
+        return None
+    return load_manifest(project)
+
+
+def resolved_vault_dir(project: Path) -> Path:
+    manifest = load_manifest_if_present(project)
+    if manifest:
+        return resolve_project_path(project, manifest["vault"])
+    return project / "knowledge-vault"
 
 
 def build_verify_checks(project: Path, manifest: dict[str, str]) -> dict[str, bool]:

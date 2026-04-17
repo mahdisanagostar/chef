@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import chef.cli as chef_cli
 from chef import graphify as graphify_ops
 from chef import hosts as host_install
+from chef.mcp import common as mcp_common
 from chef import packs as pack_ops
 
 
@@ -206,6 +207,58 @@ class ChefCliTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             code = graphify_ops.run_graphify_command(["definitely-missing-graphify-binary"], Path(tmp))
             self.assertEqual(code, 127)
+
+    def test_mcp_common_uses_manifest_defined_external_vault(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            vault = root / "shared-vault"
+            (vault / "Home").mkdir(parents=True)
+            (vault / "Memory").mkdir(parents=True)
+            (vault / "Graphify" / "graphify-out" / "wiki").mkdir(parents=True)
+            (vault / "Home" / "Home.md").write_text("home\n", encoding="utf-8")
+            (vault / "Memory" / "Memory.md").write_text("memory\n", encoding="utf-8")
+            (vault / "Graphify" / "index.md").write_text("graph\n", encoding="utf-8")
+            (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").write_text("wiki\n", encoding="utf-8")
+            (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").write_text("report\n", encoding="utf-8")
+
+            code, _, _ = run_command(
+                chef_cli.cmd_init,
+                project=str(project),
+                host="codex",
+                vault="existing",
+                vault_path=str(vault),
+            )
+            self.assertEqual(code, 0)
+            self.assertEqual(mcp_common.vault_dir(str(project)), vault.resolve())
+            self.assertEqual(mcp_common.graph_index_path(str(project)), (vault / "Graphify" / "graphify-out" / "wiki" / "index.md").resolve())
+            self.assertEqual(mcp_common.graph_report_path(str(project)), (vault / "Graphify" / "graphify-out" / "GRAPH_REPORT.md").resolve())
+
+    def test_verify_reports_invalid_manifest_cleanly(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            manifest_dir = project / ".chef"
+            manifest_dir.mkdir(parents=True)
+            (manifest_dir / "chef.json").write_text('{"host":"wrong"}\n', encoding="utf-8")
+
+            code, _, stderr = run_command(chef_cli.cmd_verify, project=str(project))
+            self.assertEqual(code, 1)
+            self.assertIn("Invalid manifest", stderr)
+
+    def test_pack_status_reports_invalid_pack_definition_cleanly(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            packs_dir = root / "packs"
+            (packs_dir / "broken").mkdir(parents=True)
+            (packs_dir / "broken" / "pack.json").write_text('{"name":"broken","tools":"not-a-list"}\n', encoding="utf-8")
+            project.mkdir(parents=True)
+
+            with patch.object(pack_ops, "PACKS_DIR", packs_dir):
+                code, _, stderr = run_command(chef_cli.cmd_pack_status, project=str(project))
+
+            self.assertEqual(code, 1)
+            self.assertIn("Invalid pack definition", stderr)
 
 
 if __name__ == "__main__":

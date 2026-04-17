@@ -29,7 +29,11 @@ def cmd_init(args: argparse.Namespace) -> int:
     scaffold.ensure_graphify_compat(project, vault_path)
     scaffold.ensure_project_files(project, args.host)
     scaffold.write_manifest(project, args.host, vault_path)
-    pack_ops.write_enabled_packs(project, pack_ops.read_enabled_packs(project))
+    try:
+        pack_ops.write_enabled_packs(project, pack_ops.read_enabled_packs(project))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     print(f"Initialized CHEF project at {project}")
     print(f"Vault path: {vault_path}")
     return 0
@@ -50,11 +54,14 @@ def cmd_install(args: argparse.Namespace) -> int:
 
 def cmd_graph_refresh(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    manifest_path = project / ".chef" / "chef.json"
-    if not manifest_path.exists():
+    if not scaffold.manifest_path(project).exists():
         print("Missing .chef/chef.json. Run `chef init` first.", file=sys.stderr)
         return 1
-    manifest = scaffold.load_manifest(project)
+    try:
+        manifest = scaffold.load_manifest(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     vault_path = scaffold.resolve_project_path(project, manifest["vault"])
     scaffold.ensure_vault(vault_path)
     scaffold.ensure_graphify_compat(project, vault_path)
@@ -81,11 +88,14 @@ def cmd_graph_refresh(args: argparse.Namespace) -> int:
 
 def cmd_verify(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    manifest_path = project / ".chef" / "chef.json"
-    if not manifest_path.exists():
+    if not scaffold.manifest_path(project).exists():
         print("Missing .chef/chef.json", file=sys.stderr)
         return 1
-    manifest = scaffold.load_manifest(project)
+    try:
+        manifest = scaffold.load_manifest(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     checks = scaffold.build_verify_checks(project, manifest)
     print(json.dumps(checks, indent=2))
     return 0 if all(checks.values()) else 1
@@ -107,8 +117,12 @@ def cmd_publish_github(args: argparse.Namespace) -> int:
 
 def cmd_pack_enable(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    registry = pack_ops.read_pack_registry()
-    state = pack_ops.read_enabled_packs(project)
+    try:
+        registry = pack_ops.read_pack_registry()
+        state = pack_ops.read_enabled_packs(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     enabled = set(state.get("enabled", []))
     unknown = [pack for pack in args.pack if pack not in registry]
     if unknown:
@@ -122,8 +136,12 @@ def cmd_pack_enable(args: argparse.Namespace) -> int:
 
 def cmd_pack_status(args: argparse.Namespace) -> int:
     project = detect_project(args)
-    registry = pack_ops.read_pack_registry()
-    state = pack_ops.read_enabled_packs(project)
+    try:
+        registry = pack_ops.read_pack_registry()
+        state = pack_ops.read_enabled_packs(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     enabled = set(state.get("enabled", []))
     output = {
         "enabled": sorted(enabled),

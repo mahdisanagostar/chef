@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from chef import scaffold
+
 
 def resolve_project(project_dir: str = ".") -> Path:
     return Path(project_dir).expanduser().resolve()
 
 
 def vault_dir(project_dir: str = ".") -> Path:
-    return resolve_project(project_dir) / "knowledge-vault"
+    project = resolve_project(project_dir)
+    return scaffold.resolved_vault_dir(project)
 
 
 def graph_dir(project_dir: str = ".") -> Path:
@@ -27,4 +30,3 @@ def read_text(path: Path) -> str:
     if not path.exists():
         return f"Missing file: {path}"
     return path.read_text(encoding="utf-8")
-
