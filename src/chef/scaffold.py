@@ -93,6 +93,10 @@ def ensure_project_files(project: Path, host: str) -> None:
 
     if host in {"claude", "both"}:
         sync_project_policies(project, "claude")
+        write_file(
+            project / ".claude" / "settings.json",
+            read_template("project", "claude.settings.json"),
+        )
     if host in {"codex", "both"}:
         sync_project_policies(project, "codex")
         write_file(

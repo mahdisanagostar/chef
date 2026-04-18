@@ -42,6 +42,10 @@ class ChefCliTests(unittest.TestCase):
 
             agents = (project / "AGENTS.md").read_text(encoding="utf-8")
             claude = (project / "CLAUDE.md").read_text(encoding="utf-8")
+            codex_config = (project / ".codex" / "config.toml").read_text(encoding="utf-8")
+            claude_settings = json.loads(
+                (project / ".claude" / "settings.json").read_text(encoding="utf-8")
+            )
 
             self.assertIn("Chef manages this file as the project policy", agents)
             self.assertIn("## Readable Persian Text", agents)
@@ -51,10 +55,22 @@ class ChefCliTests(unittest.TestCase):
             self.assertNotIn("## Routing", agents)
             self.assertNotIn("## graphify", agents)
             self.assertIn("- `$chef-index`", agents)
+            self.assertIn("Always use `$chef-index` first", agents)
+            self.assertIn("Fast Path runs by default", agents)
+            self.assertIn("never replies to the user directly", agents)
 
             self.assertIn("Chef manages this file as the project policy", claude)
             self.assertIn("## Skills And Commands", claude)
             self.assertIn("- `/chef-graph-refresh`", claude)
+            self.assertNotIn("- `/chef-expert-plan`", claude)
+            self.assertNotIn("## Readable Persian Text", claude)
+            self.assertEqual(claude_settings["model"], "opusplan")
+            self.assertIn('model = "gpt-5.4-mini"', codex_config)
+            self.assertIn('model_reasoning_effort = "high"', codex_config)
+            self.assertIn("[profiles.chef-fast]", codex_config)
+            self.assertIn("[profiles.chef-expert]", codex_config)
+            self.assertIn('model = "gpt-5.4"', codex_config)
+            self.assertIn('model_reasoning_effort = "xhigh"', codex_config)
 
     def test_verify_respects_claude_only_projects(self) -> None:
         with TemporaryDirectory() as tmp:

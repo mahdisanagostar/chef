@@ -41,8 +41,7 @@ def _resolve_vault_path(project: Path) -> Path:
 
 
 def _claude_commands(project: Path) -> list[str]:
-    runtime = project / ".claude" / "commands" / "chef"
-    source = runtime if runtime.exists() else ROOT / "adapters" / "claude" / "commands"
+    source = ROOT / "adapters" / "claude" / "commands"
     return [f"/{path.stem}" for path in sorted(source.glob("*.md"))]
 
 
@@ -81,7 +80,13 @@ def render_codex_policy(project: Path) -> str:
         "am, are), no filler, no \"then\". No preamble or pleasantries. No "
         "narration; just act.\n"
         "- Example: \"Me fix code\" (not \"I will fix the code\").\n"
-        "- Workflow: Interpret, Permission, Act, Conclude.\n\n"
+        "\n"
+        "### Workflow\n\n"
+        "- Interpret: Explain logic of request. Ask user if interpretation "
+        "correct.\n"
+        "- Permission: If needed, explain action before proceeding.\n"
+        "- Act: Execute task directly in Tarzan speak.\n"
+        "- Conclude: Summary of actions and critical info at end.\n\n"
         "## Graph-First Rule\n\n"
         f"- Read `{graph_index}` first.\n"
         f"- Read `{graph_report}` next.\n"
@@ -92,6 +97,12 @@ def render_codex_policy(project: Path) -> str:
         "## Skills And Commands\n\n"
         "- Project runtime root: `.codex/skills`\n"
         "- Project plugin root: `.codex-plugin`\n"
+        "- Always use `$chef-index` first for Codex work in this project.\n"
+        "- Fast Path runs by default through `.codex/config.toml`.\n"
+        "- For architecture, threat modeling, ambiguous reviews, or hard "
+        "multi-module work, spawn one Expert Path helper using `chef-expert`.\n"
+        "- Keep Expert Path behind Fast Path. Expert Path assists the main "
+        "agent and never replies to the user directly.\n"
         "- Enabled Chef skills for this project:\n"
         f"{skill_lines}"
     )
@@ -112,18 +123,18 @@ def render_claude_policy(project: Path) -> str:
     return (
         "# Chef Claude Policy\n\n"
         "Chef manages this file as the project policy and central runtime index for Claude.\n\n"
-        "## Readable Persian Text\n\n"
-        "- When you reply in Persian, write the Persian text normally.\n"
-        "- Put each English section, number, code snippet, version name, or any "
-        "left-to-right phrase on a separate line.\n"
-        "- Then continue the Persian text again on the next line.\n"
-        "- For English text, use normal left-to-right writing.\n\n"
         "## Tarzan Persona\n\n"
         "- Style: 3-6 word sentences. No articles (the), no linking verbs (is, "
         "am, are), no filler, no \"then\". No preamble or pleasantries. No "
         "narration; just act.\n"
         "- Example: \"Me fix code\" (not \"I will fix the code\").\n"
-        "- Workflow: Interpret, Permission, Act, Conclude.\n\n"
+        "\n"
+        "### Workflow\n\n"
+        "- Interpret: Explain logic of request. Ask user if interpretation "
+        "correct.\n"
+        "- Permission: If needed, explain action before proceeding.\n"
+        "- Act: Execute task directly in Tarzan speak.\n"
+        "- Conclude: Summary of actions and critical info at end.\n\n"
         "## Graph-First Rule\n\n"
         f"- Read `{graph_index}` first.\n"
         f"- Read `{graph_report}` next.\n"

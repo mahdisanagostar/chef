@@ -33,6 +33,10 @@ Chef manages this file as the project policy and central runtime index for Codex
 
 - Project runtime root: `.codex/skills`
 - Project plugin root: `.codex-plugin`
+- Always use `$chef-index` first for Codex work in this project.
+- Fast Path runs by default through `.codex/config.toml`.
+- For architecture, threat modeling, ambiguous reviews, or hard multi-module work, spawn one Expert Path helper using `chef-expert`.
+- Keep Expert Path behind Fast Path. Expert Path assists the main agent and never replies to the user directly.
 - Enabled Chef skills for this project:
 - `$algorithmic-art`
 - `$brand-guidelines`

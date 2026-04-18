@@ -28,7 +28,6 @@ Chef manages this file as the project policy and central runtime index for Claud
 - Project skill root: `.claude/skills`
 - Project plugin root: `.claude/plugins/local`
 - Chef commands for this project:
-- `/chef-expert-plan`
 - `/chef-graph-refresh`
 - `/chef-pack-status`
 - Enabled Chef skills for this project:

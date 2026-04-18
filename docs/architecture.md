@@ -92,8 +92,9 @@ Claude:
 
 Codex:
 
-- Default: `gpt-5.4-mini` with `high`
-- Expert: `gpt-5.4` with `xhigh`
+- Fast Path default: `gpt-5.4-mini` with `high`
+- Expert Path helper: `gpt-5.4` with `xhigh`
+- Expert Path assists Fast Path and never interacts with the user directly
 
 ## Orchestration Extraction
 

@@ -83,6 +83,7 @@ python -m unittest discover -s tests -v
 - Keep generated runtime state inside project boundaries.
 - Allow raw file reads only when user explicitly asks.
 - Use native host expert routing, not cross-vendor routing.
+- Codex uses Fast Path by default and escalates hard work to a hidden Expert Path helper.
 
 ## Key Paths
 
