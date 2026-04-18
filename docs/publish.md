@@ -2,7 +2,7 @@
 
 ## Local Repo
 
-CHEF repository root:
+Chef repository root:
 
 `chef/`
 
@@ -12,7 +12,7 @@ CHEF repository root:
 cd chef
 git init
 git add .
-git commit -m "Initial CHEF scaffold"
+git commit -m "Initial Chef scaffold"
 gh repo create <owner>/chef --public --source . --remote origin --push
 ```
 

@@ -1,5 +1,5 @@
 {
-  "name": "CHEF",
+  "name": "Chef",
   "version": "0.1.0",
   "graph_policy": "graph-first",
   "project_root": "chef/",

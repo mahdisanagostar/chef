@@ -1,6 +1,6 @@
 # Skill Finder
 
-Match task to CHEF pack before action.
+Match task to Chef pack before action.
 
 ## Order
 
@@ -11,4 +11,3 @@ Match task to CHEF pack before action.
 5. Research
 6. Media
 7. Business
-

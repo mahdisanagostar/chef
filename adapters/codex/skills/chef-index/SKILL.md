@@ -1,6 +1,6 @@
-# CHEF Index
+# Chef Index
 
-Use CHEF as shared entrypoint for project work.
+Use Chef as shared entrypoint for project work.
 
 ## Rules
 

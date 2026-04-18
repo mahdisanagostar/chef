@@ -57,7 +57,7 @@ chef install --host both --project .
 
 Pack-aware install behavior:
 
-- bundled CHEF skills install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
+- bundled Chef skills install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
 - external skill pages and GitHub sources cache under `.chef/vendor/` and sync into project-local targets
 - Codex MCP-capable items also merge into project-local `.codex-plugin/.mcp.json`
 - `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
@@ -86,7 +86,7 @@ chef graph-refresh --project . --host codex --execute
 
 ## MCP Servers
 
-CHEF ships three MCP entry points after install:
+Chef ships three MCP entry points after install:
 
 - `chef-knowledge-mcp`
 - `chef-review-mcp`

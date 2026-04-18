@@ -1,8 +1,8 @@
-# CHEF Architecture
+# Chef Architecture
 
 ## Shape
 
-CHEF ships one repository with one shared core and two isolated host adapters.
+Chef ships one repository with one shared core and two isolated host adapters.
 
 - `core/` holds policy, routing, manifests, and orchestration extraction.
 - `adapters/claude/` holds Claude-specific commands and plugin metadata.
@@ -36,7 +36,7 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - Catalog schema details live in
   [docs/catalog-schema.md](catalog-schema.md)
 
-CHEF no longer writes runtime assets into home directories. Install output stays inside the project tree so the repo behaves like a self-contained workspace image.
+Chef no longer writes runtime assets into home directories. Install output stays inside the project tree so the repo behaves like a self-contained workspace image.
 
 ## Pack Resolution
 
@@ -97,7 +97,7 @@ Codex:
 
 ## Orchestration Extraction
 
-CHEF absorbs patterns from external frameworks without stacking them whole.
+Chef absorbs patterns from external frameworks without stacking them whole.
 
 - Superpowers: planning gates, explicit handoffs, review discipline.
 - gstack: operator commands, host-aware install, role packs.

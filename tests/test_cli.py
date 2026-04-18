@@ -231,7 +231,7 @@ class ChefCliTests(unittest.TestCase):
             self.assertTrue(
                 (project / ".codex" / "skills" / "using-git-worktrees" / "SKILL.md").exists()
             )
-            self.assertIn("Installed CHEF assets:", stdout)
+            self.assertIn("Installed Chef assets:", stdout)
 
     def test_cmd_install_codex_skips_optional_skills_when_no_pack_enables_them(self) -> None:
         with TemporaryDirectory() as tmp:

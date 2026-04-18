@@ -1,4 +1,4 @@
-# CHEF Manifest Schema
+# Chef Manifest Schema
 
 ## File
 
@@ -6,7 +6,7 @@
 
 ## Purpose
 
-CHEF writes one manifest per initialized project.
+Chef writes one manifest per initialized project.
 
 The manifest records host mode, vault location, and graph entrypoints.
 
@@ -28,7 +28,7 @@ CLI verification, graph refresh, and MCP vault resolution all depend on this fil
 ## Field Rules
 
 - `project`
-  Constant string for the CHEF project family.
+  Constant string for the Chef project family.
 - `host`
   One of
   `claude`
@@ -76,7 +76,7 @@ CLI verification, graph refresh, and MCP vault resolution all depend on this fil
 
 ## Notes
 
-- CHEF treats the manifest as generated state.
+- Chef treats the manifest as generated state.
 - Edit by hand only when repairing a broken setup.
 - Re-running
   `chef init`

@@ -1,1 +1,1 @@
-"""CHEF MCP servers."""
+"""Chef MCP servers."""

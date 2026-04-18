@@ -1,6 +1,6 @@
 # chef-review-mcp
 
-Review MCP server for CHEF.
+Review MCP server for Chef.
 
 ## Entry Point
 
@@ -17,4 +17,3 @@ chef-review-mcp
 ## Purpose
 
 Use graph-first review prompts and review context before raw source.
-

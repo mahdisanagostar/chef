@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "chef-agent"
 version = "0.1.0"
-description = "CHEF dual-host enhancement package for Claude and Codex."
+description = "Chef dual-host enhancement package for Claude and Codex."
 requires-python = ">=3.11"
 authors = [{ name = "Mahdi" }]
 readme = "README.md"

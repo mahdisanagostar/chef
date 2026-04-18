@@ -1,6 +1,6 @@
 # chef-security-mcp
 
-Security MCP server for CHEF.
+Security MCP server for Chef.
 
 ## Entry Point
 
@@ -17,4 +17,3 @@ chef-security-mcp
 ## Purpose
 
 Surface secure review prompts and graph-first security context.
-

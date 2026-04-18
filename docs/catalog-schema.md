@@ -1,6 +1,6 @@
-# CHEF Catalog Schema
+# Chef Catalog Schema
 
-CHEF keeps one capability catalog in
+Chef keeps one capability catalog in
 `catalog/items.json`
 .
 
@@ -17,10 +17,10 @@ Each entry uses the item id as the JSON key and defines:
 
 Meaning:
 
-- `bundled` items ship inside this repo and CHEF can install them directly into project-local runtime
+- `bundled` items ship inside this repo and Chef can install them directly into project-local runtime
 - `manual` items fetch from upstream URLs into `.chef/vendor/` and install into managed local targets
 - `always_installed` applies to bundled baseline items that should install even when no pack enables them
-- `mcp` lets CHEF write Codex MCP server entries during install
+- `mcp` lets Chef write Codex MCP server entries during install
 
 Pack rules:
 

@@ -1,6 +1,6 @@
 # chef-knowledge-mcp
 
-Knowledge MCP server for CHEF.
+Knowledge MCP server for Chef.
 
 ## Entry Point
 
@@ -28,4 +28,3 @@ command = ".venv/bin/chef-knowledge-mcp"
 Use stdio MCP registration and point it at:
 
 `.venv/bin/chef-knowledge-mcp`
-

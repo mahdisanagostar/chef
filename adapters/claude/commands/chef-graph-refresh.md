@@ -1,6 +1,6 @@
 # /chef-graph-refresh
 
-Refresh CHEF graph state for current project.
+Refresh Chef graph state for current project.
 
 1. Confirm `knowledge-vault/Graphify/index.md` exists.
 2. Confirm `knowledge-vault/Graphify/graphify-out/` exists.

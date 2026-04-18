@@ -35,7 +35,7 @@
     "source_url": "https://github.com/anthropics/skills/blob/main/skills/canvas-design/SKILL.md"
   },
   "chef-index": {
-    "name": "CHEF Index",
+    "name": "Chef Index",
     "kind": "codex_skill",
     "hosts": ["codex"],
     "install": {"method": "bundled", "path": "adapters/codex/skills/chef-index"},

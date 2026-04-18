@@ -59,7 +59,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    print(f"Initialized CHEF project at {project}")
+    print(f"Initialized Chef project at {project}")
     print(f"Vault path: {vault_path}")
     return 0
 
@@ -94,7 +94,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         installed.extend(host_installed)
         warnings.extend(host_warnings)
         errors.extend(host_errors)
-    print("Installed CHEF assets:")
+    print("Installed Chef assets:")
     for path in installed:
         print(f"- {path}")
     warning_lines = sorted(set(warnings))
@@ -131,7 +131,7 @@ def cmd_graph_refresh(args: argparse.Namespace) -> int:
         for command in install_sequence + [update_command]:
             code = graphify_ops.run_graphify_command(command, project)
             if code == 127:
-                print("Graphify not installed. CHEF kept scaffold only.", file=sys.stderr)
+                print("Graphify not installed. Chef kept scaffold only.", file=sys.stderr)
                 return 1
             if code != 0:
                 return code
@@ -179,7 +179,7 @@ def cmd_publish_github(args: argparse.Namespace) -> int:
     print("Run these commands:")
     print(f"git -C {project} init")
     print(f"git -C {project} add .")
-    print(f"git -C {project} commit -m 'Initial CHEF scaffold'")
+    print(f"git -C {project} commit -m 'Initial Chef scaffold'")
     print(f"gh repo create {owner}/{repo} --public --source {project} --remote origin --push")
     return 0
 

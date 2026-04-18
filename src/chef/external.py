@@ -302,7 +302,7 @@ def fetch_snapshot(project: Path, item: dict[str, object], offline: bool = False
 def fallback_snapshot(project: Path, item: dict[str, object], exc: Exception) -> Snapshot:
     cache_dir = ensure_clean_cache(project, str(item["id"]))
     text = (
-        f"CHEF could not fetch upstream content during install.\n"
+        f"Chef could not fetch upstream content during install.\n"
         f"Source URL: {item['source_url']}\n"
         f"Error: {exc}\n"
     )
@@ -354,7 +354,7 @@ def copy_directory(src: Path, dest: Path) -> None:
 
 
 def wrapper_frontmatter(item: dict[str, object]) -> str:
-    description = f"Installed by CHEF from {item['source_url']}"
+    description = f"Installed by Chef from {item['source_url']}"
     return (
         "---\n"
         f"name: {item['id']}\n"

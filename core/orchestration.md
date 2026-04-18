@@ -1,4 +1,4 @@
-# CHEF Orchestration Extraction
+# Chef Orchestration Extraction
 
 ## Imported Logic
 
@@ -31,4 +31,3 @@
 - no full framework stacking
 - no duplicate command layers
 - no cross-vendor model router
-

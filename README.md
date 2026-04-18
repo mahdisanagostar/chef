@@ -1,6 +1,6 @@
-# CHEF
+# Chef
 
-CHEF provides one modular enhancement package for Claude and Codex.
+Chef provides one modular enhancement package for Claude and Codex.
 
 ## Goals
 
@@ -50,7 +50,7 @@ chef install --host both --project .
 
 `chef install` now syncs enabled packs:
 
-- bundled CHEF assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
+- bundled Chef assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
 - external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
 - `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
 - Codex MCP entries write into project-local `.codex-plugin/.mcp.json` when catalog metadata exists
