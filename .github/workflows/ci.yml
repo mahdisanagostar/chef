@@ -38,12 +38,13 @@ jobs:
       - name: Smoke test CLI
         run: |
           ./bin/chef --help
-          ./bin/chef restore-backup --help
           ./bin/chef pack-status --project .
+          ./bin/chef pack-enable --help
 
       - name: Smoke test local runtime install
         run: |
           tmpdir="$(mktemp -d)"
           ./bin/chef init --project "$tmpdir" --host codex --vault new
           ./bin/chef install --project "$tmpdir" --host codex --offline
+          ./bin/chef pack-enable --project "$tmpdir" --pack media --offline
           ./bin/chef verify --project "$tmpdir"

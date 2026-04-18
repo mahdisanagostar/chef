@@ -15,6 +15,26 @@ def detect_project(args: argparse.Namespace) -> Path:
     return Path(args.project).expanduser().resolve()
 
 
+def install_host_assets(
+    project: Path, host: str, items: list[dict[str, object]], offline: bool
+) -> tuple[list[str], list[str], list[str]]:
+    installed: list[str] = []
+    warnings: list[str] = []
+    errors: list[str] = []
+    bundled_items = [item for item in items if item["install"]["method"] == "bundled"]
+
+    if host == "claude":
+        installed.extend(host_install.install_claude(project, bundled_items))
+    else:
+        installed.extend(host_install.install_codex(project, bundled_items))
+
+    result = external.sync_external_items(project, host, items, offline=offline)
+    installed.extend(result.actions)
+    warnings.extend(result.warnings)
+    errors.extend(result.errors)
+    return installed, warnings, errors
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     project = detect_project(args)
     project.mkdir(parents=True, exist_ok=True)
@@ -61,23 +81,19 @@ def cmd_install(args: argparse.Namespace) -> int:
     warnings: list[str] = []
     errors: list[str] = []
     if args.host in {"claude", "both"}:
-        bundled_claude_items = [
-            item for item in claude_items if item["install"]["method"] == "bundled"
-        ]
-        installed.extend(host_install.install_claude(project, bundled_claude_items))
-        result = external.sync_external_items(project, "claude", claude_items, offline=args.offline)
-        installed.extend(result.actions)
-        warnings.extend(result.warnings)
-        errors.extend(result.errors)
+        host_installed, host_warnings, host_errors = install_host_assets(
+            project, "claude", claude_items, offline=args.offline
+        )
+        installed.extend(host_installed)
+        warnings.extend(host_warnings)
+        errors.extend(host_errors)
     if args.host in {"codex", "both"}:
-        bundled_codex_items = [
-            item for item in codex_items if item["install"]["method"] == "bundled"
-        ]
-        installed.extend(host_install.install_codex(project, bundled_codex_items))
-        result = external.sync_external_items(project, "codex", codex_items, offline=args.offline)
-        installed.extend(result.actions)
-        warnings.extend(result.warnings)
-        errors.extend(result.errors)
+        host_installed, host_warnings, host_errors = install_host_assets(
+            project, "codex", codex_items, offline=args.offline
+        )
+        installed.extend(host_installed)
+        warnings.extend(host_warnings)
+        errors.extend(host_errors)
     print("Installed CHEF assets:")
     for path in installed:
         print(f"- {path}")
@@ -92,19 +108,6 @@ def cmd_install(args: argparse.Namespace) -> int:
         for error in error_lines:
             print(f"- {error}", file=sys.stderr)
         return 1
-    return 0
-
-
-def cmd_restore_backup(args: argparse.Namespace) -> int:
-    project = detect_project(args)
-    try:
-        restored = host_install.restore_backup(project, Path(args.backup), force=args.force)
-    except ValueError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
-    print("Restore actions:")
-    for path in restored:
-        print(f"- {path}")
     return 0
 
 
@@ -196,17 +199,51 @@ def cmd_pack_enable(args: argparse.Namespace) -> int:
         return 1
     enabled.update(args.pack)
     pack_ops.write_enabled_packs(project, {"enabled": sorted(enabled)})
-    resolved = pack_ops.resolve_enabled_items(project, include_always_installed=False)
+    try:
+        resolved = pack_ops.resolve_enabled_items(project, include_always_installed=False)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    installed: list[str] = []
+    warnings: list[str] = []
+    errors: list[str] = []
+    try:
+        manifest = scaffold.load_manifest_if_present(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    if manifest:
+        if manifest["host"] in {"claude", "both"}:
+            claude_items = pack_ops.resolve_enabled_items(project, host="claude")
+            host_installed, host_warnings, host_errors = install_host_assets(
+                project, "claude", claude_items, offline=args.offline
+            )
+            installed.extend(host_installed)
+            warnings.extend(host_warnings)
+            errors.extend(host_errors)
+        if manifest["host"] in {"codex", "both"}:
+            codex_items = pack_ops.resolve_enabled_items(project, host="codex")
+            host_installed, host_warnings, host_errors = install_host_assets(
+                project, "codex", codex_items, offline=args.offline
+            )
+            installed.extend(host_installed)
+            warnings.extend(host_warnings)
+            errors.extend(host_errors)
+
     print(
         json.dumps(
             {
                 "enabled": sorted(enabled),
                 "enabled_items": sorted(str(item["id"]) for item in resolved),
+                "installed": installed,
+                "warnings": sorted(set(warnings)),
+                "errors": sorted(set(errors)),
             },
             indent=2,
         )
     )
-    return 0
+    return 0 if not errors else 1
 
 
 def cmd_pack_status(args: argparse.Namespace) -> int:
@@ -249,12 +286,6 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser.add_argument("--offline", action="store_true")
     install_parser.set_defaults(func=cmd_install)
 
-    restore_parser = sub.add_parser("restore-backup")
-    restore_parser.add_argument("--project", required=True)
-    restore_parser.add_argument("--backup", required=True)
-    restore_parser.add_argument("--force", action="store_true")
-    restore_parser.set_defaults(func=cmd_restore_backup)
-
     graph_parser = sub.add_parser("graph-refresh")
     graph_parser.add_argument("--project", required=True)
     graph_parser.add_argument("--host", choices=["claude", "codex"], default="claude")
@@ -273,6 +304,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     enable_parser = sub.add_parser("pack-enable")
     enable_parser.add_argument("--project", required=True)
+    enable_parser.add_argument("--offline", action="store_true")
     enable_parser.add_argument("--pack", action="append", required=True)
     enable_parser.set_defaults(func=cmd_pack_enable)
 

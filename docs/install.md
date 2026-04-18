@@ -61,17 +61,14 @@ Pack-aware install behavior:
 - external skill pages and GitHub sources cache under `.chef/vendor/` and sync into project-local targets
 - Codex MCP-capable items also merge into project-local `.codex-plugin/.mcp.json`
 - `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
-- managed backups stay under `.chef/backups/`
 
-Restore one backed-up managed target:
+Enable and install more packs later:
 
 ```bash
-chef restore-backup --project . --backup ./.chef/backups/claude-plugin-chef-20260417T000001Z
+chef pack-enable --project . --pack ux --pack media --offline
 ```
 
-Use
-`--force`
-to replace an existing target while preserving one more backup snapshot.
+`chef pack-enable` now writes enabled-pack state and installs pack assets for the project host in one step.
 
 Local wrapper without editable install:
 

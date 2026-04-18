@@ -282,29 +282,13 @@ class ChefCliTests(unittest.TestCase):
                 "install": {"path": "adapters/codex/skills/skill-a"},
             }
 
-            with (
-                patch.object(host_install, "ROOT", root),
-                patch.object(host_install, "timestamp_label", return_value="20260417T000000Z"),
-            ):
+            with patch.object(host_install, "ROOT", root):
                 installed = host_install.install_codex(project, [bundled_item])
 
             self.assertIn(str(project / ".codex" / "skills" / "skill-a"), installed)
             self.assertIn(str(project / ".codex-plugin"), installed)
-            self.assertIn(
-                f"backup:{project / '.chef' / 'backups' / 'codex-skill-skill-a-20260417T000000Z'}",
-                installed,
-            )
             self.assertTrue((project / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
             self.assertFalse((project / ".codex" / "skills" / "skill-a" / "OLD.md").exists())
-            self.assertTrue(
-                (
-                    project
-                    / ".chef"
-                    / "backups"
-                    / "codex-skill-skill-a-20260417T000000Z"
-                    / "OLD.md"
-                ).exists()
-            )
             self.assertTrue((project / ".codex-plugin" / "plugin.json").exists())
 
     def test_install_claude_copies_commands_and_plugin(self) -> None:
@@ -327,10 +311,7 @@ class ChefCliTests(unittest.TestCase):
             (existing_command_dir / "OLD.md").write_text("old command\n", encoding="utf-8")
             (existing_plugin_dir / "plugin.json").write_text('{"name":"old"}\n', encoding="utf-8")
 
-            with (
-                patch.object(host_install, "ROOT", root),
-                patch.object(host_install, "timestamp_label", return_value="20260417T000001Z"),
-            ):
+            with patch.object(host_install, "ROOT", root):
                 installed = host_install.install_claude(project)
 
             self.assertIn(str(project / ".claude" / "commands" / "chef"), installed)
@@ -338,17 +319,10 @@ class ChefCliTests(unittest.TestCase):
                 str(project / ".claude" / "plugins" / "local" / "chef" / ".claude-plugin"),
                 installed,
             )
-            self.assertIn(
-                f"backup:{project / '.chef' / 'backups' / 'claude-commands-chef-20260417T000001Z'}",
-                installed,
-            )
-            self.assertIn(
-                f"backup:{project / '.chef' / 'backups' / 'claude-plugin-chef-20260417T000001Z'}",
-                installed,
-            )
             self.assertTrue(
                 (project / ".claude" / "commands" / "chef" / "chef-pack-status.md").exists()
             )
+            self.assertFalse((project / ".claude" / "commands" / "chef" / "OLD.md").exists())
             self.assertTrue(
                 (
                     project
@@ -358,15 +332,6 @@ class ChefCliTests(unittest.TestCase):
                     / "chef"
                     / ".claude-plugin"
                     / "plugin.json"
-                ).exists()
-            )
-            self.assertTrue(
-                (
-                    project
-                    / ".chef"
-                    / "backups"
-                    / "claude-commands-chef-20260417T000001Z"
-                    / "OLD.md"
                 ).exists()
             )
 
@@ -400,63 +365,6 @@ class ChefCliTests(unittest.TestCase):
                 (project / ".claude" / "skills" / "using-git-worktrees" / "SKILL.md").exists()
             )
 
-    def test_restore_backup_restores_codex_skill(self) -> None:
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            project = root / "project"
-            backup = project / ".chef" / "backups" / "codex-skill-skill-a-20260417T000002Z"
-            backup.mkdir(parents=True)
-            (backup / "SKILL.md").write_text("# Restored Skill\n", encoding="utf-8")
-
-            code, stdout, _ = run_command(
-                chef_cli.cmd_restore_backup,
-                project=str(project),
-                backup=str(backup),
-                force=False,
-            )
-
-            self.assertEqual(code, 0)
-            self.assertIn("Restore actions:", stdout)
-            self.assertTrue((project / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
-            self.assertFalse(backup.exists())
-
-    def test_restore_backup_force_replaces_existing_target(self) -> None:
-        with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            project = root / "project"
-            backup = project / ".chef" / "backups" / "project-codex-plugin-20260417T000003Z"
-            target = project / ".codex-plugin"
-            backup.mkdir(parents=True)
-            target.mkdir(parents=True)
-            (backup / "plugin.json").write_text('{"name":"restored"}\n', encoding="utf-8")
-            (target / "plugin.json").write_text('{"name":"current"}\n', encoding="utf-8")
-
-            with (
-                patch.object(host_install, "timestamp_label", return_value="20260417T000004Z"),
-            ):
-                code, stdout, _ = run_command(
-                    chef_cli.cmd_restore_backup,
-                    project=str(project),
-                    backup=str(backup),
-                    force=True,
-                )
-
-            self.assertEqual(code, 0)
-            self.assertIn("backup:", stdout)
-            self.assertEqual(
-                (target / "plugin.json").read_text(encoding="utf-8"),
-                '{"name":"restored"}\n',
-            )
-            self.assertTrue(
-                (
-                    project
-                    / ".chef"
-                    / "backups"
-                    / "restore-overwrite-project-codex-plugin-20260417T000004Z"
-                    / "plugin.json"
-                ).exists()
-            )
-
     def test_verify_codex_project_passes_after_local_install(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -483,6 +391,38 @@ class ChefCliTests(unittest.TestCase):
             checks = json.loads(stdout)
             self.assertTrue(checks["item:chef-index"])
             self.assertTrue(checks["item:graph-first-retrieval"])
+
+    def test_pack_enable_installs_new_pack_assets_for_project_host(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
+
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], []),
+            ):
+                code, stdout, _ = run_command(
+                    chef_cli.cmd_pack_enable,
+                    project=str(project),
+                    offline=True,
+                    pack=["media"],
+                )
+
+            self.assertEqual(code, 0)
+            status = json.loads(stdout)
+            self.assertIn("media", status["enabled"])
+            self.assertIn("remotion-best-practices", status["enabled_items"])
+            self.assertTrue(
+                (project / ".codex" / "skills" / "remotion-best-practices" / "SKILL.md").exists()
+            )
+            self.assertTrue(status["installed"])
 
     def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:
         with TemporaryDirectory() as tmp:

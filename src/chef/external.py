@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 
-from chef.hosts import backup_existing_path
+from chef.hosts import replace_path
 from chef.paths import (
     claude_plugin_dir,
     claude_skill_dir,
@@ -395,13 +395,9 @@ def build_wrapper_skill(
     return wrapper_frontmatter(item) + title + "\n".join(body).strip() + "\n"
 
 
-def backup_and_copy_skill(
-    project: Path, target: Path, label: str, skill_dir: Path | None, skill_content: str
-) -> list[str]:
+def replace_and_copy_skill(target: Path, skill_dir: Path | None, skill_content: str) -> list[str]:
     actions: list[str] = []
-    backup = backup_existing_path(project, target, label)
-    if backup:
-        actions.append(f"backup:{backup}")
+    replace_path(target)
     if skill_dir is not None:
         copy_directory(skill_dir, target)
     else:
@@ -423,10 +419,9 @@ def install_skill_like_item(
         target = codex_skill_dir(project, item_id)
     else:
         target = claude_skill_dir(project, item_id)
-    label = f"{host}-skill-{item_id}"
     skill_dir = snapshot.material_path and detect_skill_dir(snapshot.material_path, item_id)
     skill_content = build_wrapper_skill(item, snapshot, extra_lines=extra_lines)
-    return backup_and_copy_skill(project, target, label, skill_dir, skill_content)
+    return replace_and_copy_skill(target, skill_dir, skill_content)
 
 
 def install_claude_plugin_item(
@@ -443,9 +438,7 @@ def install_claude_plugin_item(
 
     target = claude_plugin_dir(project, item_id)
     actions: list[str] = []
-    backup = backup_existing_path(project, target, f"claude-plugin-{item_id}")
-    if backup:
-        actions.append(f"backup:{backup}")
+    replace_path(target)
     copy_directory(plugin_dir, target)
     actions.append(str(target))
     return actions, []
@@ -487,18 +480,13 @@ def merge_codex_mcp_entries(project: Path, items: list[dict[str, object]]) -> li
         }
 
     desired = json.dumps({"mcpServers": servers}, indent=2) + "\n"
-    actions: list[str] = []
     mcp_path.parent.mkdir(parents=True, exist_ok=True)
     if mcp_path.exists():
         current = mcp_path.read_text(encoding="utf-8")
         if current == desired:
             return [str(mcp_path)]
-        backup = backup_existing_path(project, mcp_path, "project-codex-mcp")
-        if backup:
-            actions.append(f"backup:{backup}")
     mcp_path.write_text(desired, encoding="utf-8")
-    actions.append(str(mcp_path))
-    return actions
+    return [str(mcp_path)]
 
 
 def sync_external_items(

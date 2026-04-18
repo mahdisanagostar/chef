@@ -20,7 +20,7 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `src/chef/external.py` owns external source fetch, wrapper generation, Claude plugin sync, and Codex MCP config writes.
 - `src/chef/scaffold.py` owns vault creation, compatibility links, manifests, and verification checks.
 - `src/chef/packs.py` owns pack registry, enabled-pack state, and item resolution.
-- `src/chef/hosts.py` owns host-specific install copy logic, backup restore behavior, and bundled Codex skill selection.
+- `src/chef/hosts.py` owns host-specific install copy logic, target replacement behavior, and bundled skill selection.
 - `src/chef/graphify.py` owns Graphify binary resolution and refresh execution helpers.
 
 ## Generated State
@@ -28,7 +28,6 @@ CHEF ships one repository with one shared core and two isolated host adapters.
 - `.chef/chef.json` stores validated host and vault routing data.
 - `.chef/enabled-packs.json` stores selected pack ids.
 - `.chef/vendor/` stores cached upstream material snapshots.
-- `.chef/backups/` stores managed rollback snapshots for generated runtime targets.
 - `.claude/commands/`, `.claude/plugins/`, and `.claude/skills/` store project-local Claude runtime output.
 - `.codex/skills/` stores project-local Codex skills.
 - `.codex-plugin/` stores project-local Codex plugin and MCP config.
@@ -46,6 +45,7 @@ CHEF no longer writes runtime assets into home directories. Install output stays
 - `chef pack-status` expands enabled packs into concrete item ids.
 - `chef install` materializes bundled items into project-local host runtime from that resolved set.
 - Manual catalog items sync into `.chef/vendor/` first and install into local skill/plugin targets or Codex MCP config.
+- `chef pack-enable` also installs newly enabled packs into the project runtime for the manifest host.
 - `chef install --offline` uses cache-first behavior and wrapper fallbacks.
 - `chef verify` checks enabled item targets inside the project tree.
 

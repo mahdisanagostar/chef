@@ -160,6 +160,38 @@ class ChefExternalTests(unittest.TestCase):
             self.assertEqual(result.warnings, [])
             self.assertTrue((project / ".codex" / "skills" / "cached-skill" / "SKILL.md").exists())
 
+    def test_sync_external_replaces_existing_skill_target(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            target = project / ".codex" / "skills" / "sample-skill"
+            target.mkdir(parents=True)
+            (target / "OLD.md").write_text("old\n", encoding="utf-8")
+            snapshot = external_ops.Snapshot(
+                cache_dir=project / ".chef" / "vendor" / "sample-skill",
+                material_kind="text",
+                text="Imported replacement text",
+            )
+            snapshot.cache_dir.mkdir(parents=True)
+            item = {
+                "id": "sample-skill",
+                "name": "Sample Skill",
+                "kind": "skill",
+                "hosts": ["codex"],
+                "install": {"method": "manual"},
+                "source_url": "https://skills.example/sample-skill",
+            }
+
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
+                result = external_ops.sync_external_items(project, "codex", [item])
+
+            self.assertEqual(result.errors, [])
+            self.assertFalse((target / "OLD.md").exists())
+            self.assertIn(
+                "Imported replacement text",
+                (target / "SKILL.md").read_text(encoding="utf-8"),
+            )
+
     def test_fetch_snapshot_falls_back_from_blob_to_repo_path(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)

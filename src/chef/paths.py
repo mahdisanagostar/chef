@@ -13,10 +13,6 @@ def chef_dir(project: Path) -> Path:
     return project / ".chef"
 
 
-def backups_dir(project: Path) -> Path:
-    return chef_dir(project) / "backups"
-
-
 def vendor_dir(project: Path) -> Path:
     return chef_dir(project) / "vendor"
 
