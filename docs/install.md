@@ -59,7 +59,7 @@ Pack-aware install behavior:
 
 - bundled Chef skills install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
 - external skill pages and GitHub sources cache under `.chef/vendor/` and sync into project-local targets
-- Codex MCP-capable items also merge into project-local `.codex-plugin/.mcp.json`
+- Codex registers built-in `chef-knowledge-mcp` and also merges MCP-capable catalog items into project-local `.codex-plugin/.mcp.json`
 - `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
 
 Enable and install more packs later:
@@ -78,10 +78,12 @@ Local wrapper without editable install:
 
 ## Verification
 
+`chef graph-refresh` auto-detects the current agent host when `--host` is omitted.
+
 ```bash
 chef install --host both --project . --offline
 chef verify --project .
-chef graph-refresh --project . --host codex --execute
+chef graph-refresh --project . --execute
 ```
 
 ## MCP Servers

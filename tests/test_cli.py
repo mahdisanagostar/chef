@@ -53,7 +53,7 @@ class ChefCliTests(unittest.TestCase):
             self.assertIn("## Graph-First Rule", agents)
             self.assertIn("## Skills And Commands", agents)
             self.assertNotIn("## Routing", agents)
-            self.assertNotIn("## graphify", agents)
+            self.assertIn("## graphify", agents)
             self.assertIn("- `$chef-index`", agents)
             self.assertIn("Always use `$chef-index` first", agents)
             self.assertIn("Fast Path runs by default", agents)
@@ -164,12 +164,13 @@ class ChefCliTests(unittest.TestCase):
             report.write_text("REAL REPORT\n", encoding="utf-8")
             index.write_text("REAL INDEX\n", encoding="utf-8")
 
-            code, _, _ = run_command(
-                chef_cli.cmd_graph_refresh, project=str(project), host="codex", execute=False
+            code, stdout, _ = run_command(
+                chef_cli.cmd_graph_refresh, project=str(project), host="auto", execute=False
             )
             self.assertEqual(code, 0)
             self.assertEqual(report.read_text(encoding="utf-8"), "REAL REPORT\n")
             self.assertEqual(index.read_text(encoding="utf-8"), "REAL INDEX\n")
+            self.assertIn("Graphify host: codex", stdout)
 
     def test_new_vault_manifest_uses_project_relative_paths(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -275,6 +276,16 @@ class ChefCliTests(unittest.TestCase):
                 (project / ".codex" / "skills" / "using-git-worktrees" / "SKILL.md").exists()
             )
             self.assertIn("Installed Chef assets:", stdout)
+            mcp_data = json.loads(
+                (project / ".codex-plugin" / ".mcp.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                mcp_data["mcpServers"]["chef-knowledge-mcp"],
+                {
+                    "command": str(project.resolve() / ".venv" / "bin" / "chef-knowledge-mcp"),
+                    "args": [],
+                },
+            )
 
     def test_cmd_install_codex_skips_optional_skills_when_no_pack_enables_them(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -330,9 +341,18 @@ class ChefCliTests(unittest.TestCase):
 
             self.assertIn(str(project / ".codex" / "skills" / "skill-a"), installed)
             self.assertIn(str(project / ".codex-plugin"), installed)
+            self.assertIn(str(project / ".codex-plugin" / ".mcp.json"), installed)
             self.assertTrue((project / ".codex" / "skills" / "skill-a" / "SKILL.md").exists())
             self.assertFalse((project / ".codex" / "skills" / "skill-a" / "OLD.md").exists())
             self.assertTrue((project / ".codex-plugin" / "plugin.json").exists())
+            mcp_data = json.loads((project / ".codex-plugin" / ".mcp.json").read_text())
+            self.assertEqual(
+                mcp_data["mcpServers"]["chef-knowledge-mcp"],
+                {
+                    "command": str(project.resolve() / ".venv" / "bin" / "chef-knowledge-mcp"),
+                    "args": [],
+                },
+            )
 
     def test_install_claude_copies_commands_and_plugin(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -432,6 +452,7 @@ class ChefCliTests(unittest.TestCase):
             code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
             checks = json.loads(stdout)
+            self.assertTrue(checks["mcp:chef-knowledge-mcp"])
             self.assertTrue(checks["item:chef-index"])
             self.assertTrue(checks["item:graph-first-retrieval"])
 
@@ -511,6 +532,23 @@ class ChefCliTests(unittest.TestCase):
                 ["definitely-missing-graphify-binary"], Path(tmp)
             )
             self.assertEqual(code, 127)
+
+    def test_resolve_graphify_host_prefers_codex_runtime_env(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            host = graphify_ops.resolve_graphify_host(
+                project,
+                "auto",
+                "both",
+                env={"CODEX_THREAD_ID": "thread"},
+            )
+            self.assertEqual(host, "codex")
+
+    def test_resolve_graphify_host_falls_back_to_manifest_host(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            host = graphify_ops.resolve_graphify_host(project, "auto", "claude", env={})
+            self.assertEqual(host, "claude")
 
     def test_verify_reports_invalid_manifest_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:

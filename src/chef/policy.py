@@ -56,6 +56,19 @@ def _format_list(items: list[str], prefix: str = "") -> str:
     return "\n".join(f"- `{prefix}{item}`" for item in items) + "\n"
 
 
+def _graphify_codex_section() -> str:
+    return (
+        "\n## graphify\n\n"
+        "This project has a graphify knowledge graph at graphify-out/.\n\n"
+        "Rules:\n"
+        "- Before answering architecture or codebase questions, read "
+        "graphify-out/GRAPH_REPORT.md for god nodes and community structure\n"
+        "- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files\n"
+        "- After modifying code files in this session, run `graphify update .` "
+        "to keep the graph current (AST-only, no API cost)\n"
+    )
+
+
 def render_codex_policy(project: Path) -> str:
     vault_path = _resolve_vault_path(project)
     graph_index = _project_path_value(
@@ -105,6 +118,7 @@ def render_codex_policy(project: Path) -> str:
         "agent and never replies to the user directly.\n"
         "- Enabled Chef skills for this project:\n"
         f"{skill_lines}"
+        f"{_graphify_codex_section()}"
     )
 
 

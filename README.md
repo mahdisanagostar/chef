@@ -53,7 +53,7 @@ chef install --host both --project .
 - bundled Chef assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
 - external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
 - `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
-- Codex MCP entries write into project-local `.codex-plugin/.mcp.json` when catalog metadata exists
+- Codex writes built-in `chef-knowledge-mcp` plus catalog MCP entries into project-local `.codex-plugin/.mcp.json`
 
 Enable more packs after initial install:
 

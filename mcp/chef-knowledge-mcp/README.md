@@ -11,10 +11,16 @@ chef-knowledge-mcp
 ## Tools
 
 - `vault_summary`
+- `search_vault_notes`
+- `read_note`
+- `write_note`
+- `list_backlinks`
 - `read_graph_index`
 - `read_graph_report`
 - `list_graph_pages`
 - `read_graph_page`
+- `graph_status`
+- `refresh_graph_if_stale`
 
 ## Codex Config
 

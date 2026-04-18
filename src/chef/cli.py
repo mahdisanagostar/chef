@@ -126,8 +126,9 @@ def cmd_graph_refresh(args: argparse.Namespace) -> int:
     vault_path = scaffold.resolve_project_path(project, manifest["vault"])
     scaffold.ensure_vault(vault_path)
     scaffold.ensure_graphify_compat(project, vault_path)
+    resolved_host = graphify_ops.resolve_graphify_host(project, args.host, manifest["host"])
     graphify_bin = graphify_ops.resolve_graphify_binary(project)
-    install_sequence = [[graphify_bin, args.host, "install"]]
+    install_sequence = [[graphify_bin, resolved_host, "install"]]
     update_command = [graphify_bin, "update", "."]
     if args.execute:
         for command in install_sequence + [update_command]:
@@ -138,9 +139,11 @@ def cmd_graph_refresh(args: argparse.Namespace) -> int:
             if code != 0:
                 return code
         graphify_ops.sync_graphify_outputs(project, vault_path)
+        print(f"Graphify host: {resolved_host}")
         print("Graphify commands executed.")
         return 0
     print("Graph refresh scaffold ready.")
+    print(f"Graphify host: {resolved_host}")
     print("Suggested commands:")
     for command in install_sequence + [update_command]:
         print(" ".join(command))
@@ -292,7 +295,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     graph_parser = sub.add_parser("graph-refresh")
     graph_parser.add_argument("--project", required=True)
-    graph_parser.add_argument("--host", choices=["claude", "codex"], default="claude")
+    graph_parser.add_argument("--host", choices=["auto", "claude", "codex"], default="auto")
     graph_parser.add_argument("--execute", action="store_true")
     graph_parser.set_defaults(func=cmd_graph_refresh)
 

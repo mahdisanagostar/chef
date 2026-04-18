@@ -568,6 +568,17 @@ def verify_external_items(
     project: Path, host: str, items: list[dict[str, object]]
 ) -> dict[str, bool]:
     checks: dict[str, bool] = {}
+    codex_servers: dict[str, object] = {}
+    if host == "codex":
+        try:
+            mcp_data = json.loads(codex_mcp_path(project).read_text(encoding="utf-8"))
+            loaded_servers = mcp_data.get("mcpServers", {}) if isinstance(mcp_data, dict) else {}
+            if isinstance(loaded_servers, dict):
+                codex_servers = loaded_servers
+        except (FileNotFoundError, json.JSONDecodeError):
+            codex_servers = {}
+        checks["mcp:chef-knowledge-mcp"] = "chef-knowledge-mcp" in codex_servers
+
     for item in items:
         item_id = str(item["id"])
         kind = str(item["kind"])
@@ -581,12 +592,7 @@ def verify_external_items(
         if host == "codex":
             checks[f"item:{item_id}"] = codex_skill_dir(project, item_id).exists()
             if kind == "mcp_server" and item.get("mcp"):
-                try:
-                    mcp_data = json.loads(codex_mcp_path(project).read_text(encoding="utf-8"))
-                    servers = mcp_data.get("mcpServers", {}) if isinstance(mcp_data, dict) else {}
-                    checks[f"mcp:{item_id}"] = item_id in servers
-                except (FileNotFoundError, json.JSONDecodeError):
-                    checks[f"mcp:{item_id}"] = False
+                checks[f"mcp:{item_id}"] = item_id in codex_servers
         else:
             if kind == "plugin":
                 checks[f"item:{item_id}"] = (

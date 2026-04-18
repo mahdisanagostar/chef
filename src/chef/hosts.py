@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from chef.paths import (
     claude_commands_dir,
     claude_plugin_manifest_dir,
     claude_skill_dir,
+    codex_mcp_file,
     codex_plugin_dir,
     codex_skill_dir,
 )
@@ -69,6 +71,32 @@ def install_claude(
     return installed
 
 
+def codex_builtin_mcp_servers(project: Path) -> dict[str, dict[str, object]]:
+    return {
+        "chef-knowledge-mcp": {
+            "command": str(project.resolve() / ".venv" / "bin" / "chef-knowledge-mcp"),
+            "args": [],
+        }
+    }
+
+
+def ensure_codex_builtin_mcp(project: Path) -> Path:
+    mcp_path = codex_mcp_file(project)
+    existing: dict[str, object] = {"mcpServers": {}}
+    if mcp_path.exists():
+        data = json.loads(mcp_path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            existing = data
+    servers = existing.get("mcpServers")
+    if not isinstance(servers, dict):
+        servers = {}
+    servers.update(codex_builtin_mcp_servers(project))
+    desired = json.dumps({"mcpServers": servers}, indent=2) + "\n"
+    if not mcp_path.exists() or mcp_path.read_text(encoding="utf-8") != desired:
+        mcp_path.write_text(desired, encoding="utf-8")
+    return mcp_path
+
+
 def install_codex(project: Path, bundled_items: list[dict[str, object]] | None = None) -> list[str]:
     installed: list[str] = []
     installed.extend(install_bundled_skills(project, "codex", bundled_items or []))
@@ -77,4 +105,5 @@ def install_codex(project: Path, bundled_items: list[dict[str, object]] | None =
     replace_path(plugin_dest)
     shutil.copytree(plugin_src, plugin_dest)
     installed.append(str(plugin_dest))
+    installed.append(str(ensure_codex_builtin_mcp(project)))
     return installed
