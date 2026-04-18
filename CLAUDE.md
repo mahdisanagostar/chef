@@ -1,11 +1,6 @@
 # Chef Claude Policy
 
-## Readable Persian Text
-
-- When you reply in Persian, write the Persian text normally.
-- Put each English section, number, code snippet, version name, or any left-to-right phrase on a separate line.
-- Then continue the Persian text again on the next line.
-- For English text, use normal left-to-right writing.
+Chef manages this file as the project policy and central runtime index for Claude.
 
 ## Tarzan Persona
 
@@ -21,27 +16,57 @@
 
 ## Graph-First Rule
 
-1. Query `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
-2. Query `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
-3. Read raw source only when user explicitly requests.
-4. Treat repo-root `graphify-out/` as compatibility alias only.
+- Read `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
+- Read `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
+- Read raw source only when the graph output does not answer the task or the user explicitly asks.
+- Treat repo-root `graphify-out/` as a compatibility alias only.
+- After modifying code files in this session, run `graphify update .`.
 
-## Routing
+## Skills And Commands
 
-- Default executor: Sonnet
-- Expert advisor: Opus
-
-## Commands
-
-- `/chef-graph-refresh`
+- Project runtime root: `.claude/commands/chef`
+- Project skill root: `.claude/skills`
+- Project plugin root: `.claude/plugins/local`
+- Chef commands for this project:
 - `/chef-expert-plan`
+- `/chef-graph-refresh`
 - `/chef-pack-status`
-
-## graphify
-
-This project has a graphify knowledge graph at graphify-out/.
-
-Rules:
-- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- Enabled Chef skills for this project:
+- `algorithmic-art`
+- `anthropic-code-review`
+- `brand-guidelines`
+- `canvas-design`
+- `claude-mem`
+- `claude-seo`
+- `code-review-graph`
+- `code-reviewer`
+- `design-sprint`
+- `excel-mcp-server`
+- `feature-forge`
+- `frontend-design`
+- `graphify`
+- `gstack`
+- `hooked-ux`
+- `ios-hig-design`
+- `marketingskills`
+- `massgen`
+- `notebooklm-skill`
+- `obsidian-skills`
+- `owasp-security`
+- `playwright-skill`
+- `rag-architect`
+- `refactoring-ui`
+- `remotion`
+- `remotion-best-practices`
+- `ruflo`
+- `secure-code-guardian`
+- `security-guidance`
+- `skill-creator`
+- `spec-miner`
+- `superpowers`
+- `the-fool`
+- `theme-factory`
+- `ui-ux-pro-max`
+- `using-git-worktrees`
+- `ux-heuristics`
+- `web-artifacts-builder`

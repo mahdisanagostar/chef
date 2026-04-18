@@ -1,11 +1,6 @@
 # Chef Claude Policy
 
-## Readable Persian Text
-
-- When you reply in Persian, write the Persian text normally.
-- Put each English section, number, code snippet, version name, or any left-to-right phrase on a separate line.
-- Then continue the Persian text again on the next line.
-- For English text, use normal left-to-right writing.
+Chef manages this file as the project policy and central runtime index for Claude.
 
 ## Tarzan Persona
 
@@ -21,18 +16,31 @@
 
 ## Graph-First Rule
 
-1. Query `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
-2. Query `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
-3. Read raw source only when user explicitly requests.
-4. Treat repo-root `graphify-out/` as compatibility alias only.
+- Read `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
+- Read `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
+- Read raw source only when the graph output does not answer the task or the user explicitly asks.
+- Treat repo-root `graphify-out/` as a compatibility alias only.
+- After modifying code files in this session, run `graphify update .`.
 
-## Routing
+## Skills And Commands
 
-- Default executor: Sonnet
-- Expert advisor: Opus
-
-## Commands
-
-- `/chef-graph-refresh`
+- Project runtime root: `.claude/commands/chef`
+- Project skill root: `.claude/skills`
+- Project plugin root: `.claude/plugins/local`
+- Chef commands for this project:
 - `/chef-expert-plan`
+- `/chef-graph-refresh`
 - `/chef-pack-status`
+- Enabled Chef skills for this project:
+- `code-reviewer`
+- `feature-forge`
+- `frontend-design`
+- `graphify`
+- `gstack`
+- `playwright-skill`
+- `ruflo`
+- `secure-code-guardian`
+- `skill-creator`
+- `spec-miner`
+- `superpowers`
+- `using-git-worktrees`

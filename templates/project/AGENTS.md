@@ -1,5 +1,7 @@
 # Chef Codex Policy
 
+Chef manages this file as the project policy and central runtime index for Codex.
+
 ## Readable Persian Text
 
 - When you reply in Persian, write the Persian text normally.
@@ -21,20 +23,28 @@
 
 ## Graph-First Rule
 
-1. Query `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
-2. Query `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
-3. Read raw source only when user explicitly requests.
-4. Treat repo-root `graphify-out/` as compatibility alias only.
+- Read `knowledge-vault/Graphify/graphify-out/wiki/index.md` first.
+- Read `knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md` next.
+- Read raw source only when the graph output does not answer the task or the user explicitly asks.
+- Treat repo-root `graphify-out/` as a compatibility alias only.
+- After modifying code files in this session, run `graphify update .`.
 
-## Routing
+## Skills And Commands
 
-- Default model: `gpt-5.4-mini`
-- Default reasoning: `high`
-- Expert model: `gpt-5.4`
-- Expert reasoning: `xhigh`
-
-## Skills
-
+- Project runtime root: `.codex/skills`
+- Project plugin root: `.codex-plugin`
+- Enabled Chef skills for this project:
 - `$chef-index`
+- `$code-reviewer`
+- `$feature-forge`
+- `$frontend-design`
 - `$graph-first-retrieval`
+- `$graphify`
+- `$gstack`
+- `$playwright-skill`
+- `$ruflo`
+- `$secure-code-guardian`
 - `$skill-finder`
+- `$spec-miner`
+- `$superpowers`
+- `$using-git-worktrees`

@@ -20,6 +20,7 @@ graphify_ops = importlib.import_module("chef.graphify")
 external_ops = importlib.import_module("chef.external")
 host_install = importlib.import_module("chef.hosts")
 pack_ops = importlib.import_module("chef.packs")
+policy_ops = importlib.import_module("chef.policy")
 
 
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
@@ -31,6 +32,30 @@ def run_command(func, **kwargs: object) -> tuple[int, str, str]:
 
 
 class ChefCliTests(unittest.TestCase):
+    def test_init_writes_managed_policy_indexes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="both", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+
+            agents = (project / "AGENTS.md").read_text(encoding="utf-8")
+            claude = (project / "CLAUDE.md").read_text(encoding="utf-8")
+
+            self.assertIn("Chef manages this file as the project policy", agents)
+            self.assertIn("## Readable Persian Text", agents)
+            self.assertIn("## Tarzan Persona", agents)
+            self.assertIn("## Graph-First Rule", agents)
+            self.assertIn("## Skills And Commands", agents)
+            self.assertNotIn("## Routing", agents)
+            self.assertNotIn("## graphify", agents)
+            self.assertIn("- `$chef-index`", agents)
+
+            self.assertIn("Chef manages this file as the project policy", claude)
+            self.assertIn("## Skills And Commands", claude)
+            self.assertIn("- `/chef-graph-refresh`", claude)
+
     def test_verify_respects_claude_only_projects(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -42,6 +67,7 @@ class ChefCliTests(unittest.TestCase):
             (project / ".chef" / "enabled-packs.json").write_text(
                 '{"enabled":[]}\n', encoding="utf-8"
             )
+            policy_ops.sync_project_policies(project, "claude")
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -89,6 +115,7 @@ class ChefCliTests(unittest.TestCase):
             (project / ".chef" / "enabled-packs.json").write_text(
                 '{"enabled":[]}\n', encoding="utf-8"
             )
+            policy_ops.sync_project_policies(project, "claude")
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -422,7 +449,33 @@ class ChefCliTests(unittest.TestCase):
             self.assertTrue(
                 (project / ".codex" / "skills" / "remotion-best-practices" / "SKILL.md").exists()
             )
+            self.assertIn("$remotion-best-practices", (project / "AGENTS.md").read_text())
             self.assertTrue(status["installed"])
+
+    def test_verify_reports_policy_index_drift(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex", offline=True
+                )
+
+            self.assertEqual(code, 0)
+            (project / "AGENTS.md").write_text("# drift\n", encoding="utf-8")
+
+            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project))
+            self.assertEqual(code, 1)
+            checks = json.loads(stdout)
+            self.assertFalse(checks["codex_policy_index"])
 
     def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:
         with TemporaryDirectory() as tmp:

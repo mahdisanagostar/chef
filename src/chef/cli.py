@@ -9,6 +9,7 @@ from chef import external, scaffold
 from chef import graphify as graphify_ops
 from chef import hosts as host_install
 from chef import packs as pack_ops
+from chef import policy as policy_ops
 
 
 def detect_project(args: argparse.Namespace) -> Path:
@@ -51,7 +52,6 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 1
     scaffold.ensure_vault(vault_path)
     scaffold.ensure_graphify_compat(project, vault_path)
-    scaffold.ensure_project_files(project, args.host)
     scaffold.write_manifest(project, args.host, vault_path)
     try:
         pack_ops.write_enabled_packs(project, pack_ops.read_enabled_packs(project))
@@ -59,6 +59,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    scaffold.ensure_project_files(project, args.host)
     print(f"Initialized Chef project at {project}")
     print(f"Vault path: {vault_path}")
     return 0
@@ -94,6 +95,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         installed.extend(host_installed)
         warnings.extend(host_warnings)
         errors.extend(host_errors)
+    policy_ops.sync_project_policies(project, args.host)
     print("Installed Chef assets:")
     for path in installed:
         print(f"- {path}")
@@ -156,6 +158,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 1
     checks = scaffold.build_verify_checks(project, manifest)
+    checks.update(policy_ops.build_policy_checks(project, manifest["host"]))
     try:
         if manifest["host"] in {"claude", "both"}:
             claude_items = pack_ops.resolve_enabled_items(project, "claude")
@@ -230,6 +233,7 @@ def cmd_pack_enable(args: argparse.Namespace) -> int:
             installed.extend(host_installed)
             warnings.extend(host_warnings)
             errors.extend(host_errors)
+        policy_ops.sync_project_policies(project, manifest["host"])
 
     print(
         json.dumps(

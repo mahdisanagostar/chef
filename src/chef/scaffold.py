@@ -89,11 +89,13 @@ def ensure_graphify_compat(project: Path, vault_path: Path) -> None:
 
 
 def ensure_project_files(project: Path, host: str) -> None:
+    from chef.policy import sync_project_policies
+
     if host in {"claude", "both"}:
-        write_file_if_missing(project / "CLAUDE.md", read_template("project", "CLAUDE.md"))
+        sync_project_policies(project, "claude")
     if host in {"codex", "both"}:
-        write_file_if_missing(project / "AGENTS.md", read_template("project", "AGENTS.md"))
-        write_file_if_missing(
+        sync_project_policies(project, "codex")
+        write_file(
             project / ".codex" / "config.toml", read_template("project", "codex.config.toml")
         )
 
