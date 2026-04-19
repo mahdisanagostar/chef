@@ -2,11 +2,21 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 from chef.paths import CATALOG_FILE, ROOT
 
 ALLOWED_HOSTS = {"claude", "codex"}
 ALLOWED_INSTALL_METHODS = {"bundled", "manual"}
+ALLOWED_SOURCE_KINDS = {
+    "collection",
+    "framework",
+    "mcp_server",
+    "plugin",
+    "repo",
+    "skill",
+    "tool",
+}
 
 
 def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str, object]:
@@ -67,6 +77,44 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
     if source_url is not None and (not isinstance(source_url, str) or not source_url):
         raise ValueError(f"Invalid item catalog entry at {source}: source_url must be a string.")
 
+    source_ref = data.get("source_ref")
+    if source_ref is not None and (not isinstance(source_ref, str) or not source_ref):
+        raise ValueError(f"Invalid item catalog entry at {source}: source_ref must be a string.")
+
+    source_subpath = data.get("source_subpath")
+    if source_subpath is not None and (
+        not isinstance(source_subpath, str) or not source_subpath.strip()
+    ):
+        raise ValueError(
+            f"Invalid item catalog entry at {source}: source_subpath must be a string."
+        )
+
+    source_kind = data.get("source_kind")
+    if source_kind is not None and source_kind not in ALLOWED_SOURCE_KINDS:
+        raise ValueError(
+            f"Invalid item catalog entry at {source}: source_kind must be one of "
+            f"{', '.join(sorted(ALLOWED_SOURCE_KINDS))}."
+        )
+
+    checksum = data.get("checksum")
+    if checksum is not None and (not isinstance(checksum, str) or not checksum):
+        raise ValueError(f"Invalid item catalog entry at {source}: checksum must be a string.")
+
+    if source_subpath and method != "manual":
+        raise ValueError(
+            f"Invalid item catalog entry at {source}: source_subpath only applies to manual items."
+        )
+    if source_ref and method != "manual":
+        raise ValueError(
+            f"Invalid item catalog entry at {source}: source_ref only applies to manual items."
+        )
+    if source_url and source_subpath:
+        parsed = urlparse(source_url)
+        if parsed.netloc != "github.com":
+            raise ValueError(
+                f"Invalid item catalog entry at {source}: source_subpath requires a GitHub source."
+            )
+
     always_installed = data.get("always_installed", False)
     if not isinstance(always_installed, bool):
         raise ValueError(
@@ -120,6 +168,10 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
             **({"path": path_value} if isinstance(path_value, str) else {}),
         },
         **({"source_url": source_url} if isinstance(source_url, str) else {}),
+        **({"source_ref": source_ref} if isinstance(source_ref, str) else {}),
+        **({"source_subpath": source_subpath} if isinstance(source_subpath, str) else {}),
+        **({"source_kind": source_kind} if isinstance(source_kind, str) else {}),
+        **({"checksum": checksum} if isinstance(checksum, str) else {}),
         **({"mcp": {"command": mcp["command"], "args": list(mcp["args"])}} if mcp else {}),
         **({"adapter_notes": normalized_adapter_notes} if normalized_adapter_notes else {}),
         "always_installed": always_installed,

@@ -12,6 +12,10 @@ Each entry uses the item id as the JSON key and defines:
 - `install.method`: `bundled` or `manual`
 - `install.path`: required for `bundled` items
 - `source_url`: required for `manual` items
+- `source_ref`: optional pinned branch, tag, or commit for GitHub sources
+- `source_subpath`: optional explicit path inside a GitHub repo root source
+- `source_kind`: optional install hint such as `skill`, `plugin`, `mcp_server`, `collection`, or `framework`
+- `checksum`: optional integrity placeholder for future lock workflows
 - `mcp`: optional command and args for Codex MCP registration
 - `adapter_notes`: optional host-specific wrapper notes for `claude` and or `codex`
 - `always_installed`: optional boolean for baseline bundled items
@@ -20,6 +24,8 @@ Meaning:
 
 - `bundled` items ship inside this repo and Chef can install them directly into project-local runtime
 - `manual` items fetch from upstream URLs into `.chef/vendor/` and install into managed local targets
+- `source_ref` and `source_subpath` let Chef resolve repo-root sources without guessing
+- `source_kind` tells Chef whether wrapper installs are expected or whether direct skill or plugin material should be found
 - `always_installed` applies to bundled baseline items that should install even when no pack enables them
 - `mcp` lets Chef write Codex MCP server entries during install
 - `adapter_notes` lets Chef inject concise host-specific guidance ahead of imported upstream content
@@ -28,5 +34,6 @@ Pack rules:
 
 - `packs/*/pack.json` must reference valid catalog ids
 - `chef pack-status` resolves enabled packs into catalog items
-- `chef install` syncs manual items into local skill or plugin targets and writes Codex MCP config when available
+- `chef install` syncs manual items into local skill or plugin targets, writes Codex MCP config when available, and records `.chef/install-state.json`
 - `chef install --offline` reuses cache or emits managed wrapper fallbacks instead of reaching upstream
+- `chef verify --json` reports hard failures plus non-blocking fidelity warnings from install-state

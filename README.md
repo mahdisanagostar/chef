@@ -53,8 +53,9 @@ chef install --host both --project .
 
 - bundled Chef assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
 - external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
+- install truth now persists in `.chef/install-state.json`
 - `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
-- Codex writes built-in `chef-knowledge-mcp` plus catalog MCP entries into project-local `.codex-plugin/.mcp.json`
+- Codex writes built-in knowledge MCP plus pack-aware review and security MCP entries into project-local `.codex-plugin/.mcp.json`
 - baseline routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` stay installed as always-on Chef defaults
 - heavy orchestration frameworks stay out of `core` and live in the optional `orchestration` pack
 
@@ -62,6 +63,8 @@ Enable more packs after initial install:
 
 ```bash
 chef pack-enable --project . --pack media --offline
+chef pack-profile --project . --profile full --offline
+chef pack-status --project . --json
 ```
 
 `chef pack-enable` now updates enabled state and installs pack assets for the project host immediately.
@@ -77,6 +80,7 @@ Local development wrapper:
 
 ```bash
 python -m unittest discover -s tests -v
+chef verify --project . --json
 ```
 
 ## Core Rules

@@ -6,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 
-from chef.paths import TEMPLATES
+from chef.paths import TEMPLATES, install_state_file
 
 ALLOWED_HOSTS = {"claude", "codex", "both"}
 REQUIRED_MANIFEST_KEYS = {"project", "host", "vault", "generated_at", "graph_index", "graph_report"}
@@ -201,6 +201,7 @@ def build_verify_checks(project: Path, manifest: dict[str, str]) -> dict[str, bo
         "AGENTS.md": host not in {"codex", "both"} or (project / "AGENTS.md").exists(),
         ".codex/config.toml": host not in {"codex", "both"}
         or (project / ".codex" / "config.toml").exists(),
+        ".chef/install-state.json": install_state_file(project).exists(),
         "vault_home": (vault_path / "Home" / "Home.md").exists(),
         "vault_memory": (vault_path / "Memory" / "Memory.md").exists(),
         "graph_index_page": (vault_path / "Graphify" / "index.md").exists(),

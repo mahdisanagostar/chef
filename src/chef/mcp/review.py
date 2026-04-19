@@ -6,7 +6,9 @@ from chef.mcp.common import (
     graph_index_path,
     graph_report_path,
     manifest_warning,
+    read_path_snippets,
     read_text,
+    report_excerpt,
 )
 
 mcp = FastMCP("chef-review-mcp")
@@ -64,6 +66,39 @@ def review_context(project_dir: str = ".", focus: str = "") -> str:
             index_text,
             "Graph Report",
             report_text,
+        ]
+    )
+    return "\n\n".join(sections)
+
+
+@mcp.tool()
+def review_hotspots(project_dir: str = ".", limit: int = 12) -> str:
+    warning = manifest_warning(project_dir)
+    lines: list[str] = []
+    if warning:
+        lines.append(warning)
+    lines.append(
+        report_excerpt(
+            project_dir,
+            keywords=("god node", "central", "community", "hub"),
+            limit=limit,
+        )
+    )
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def changed_files_review_context(project_dir: str = ".", paths: str = "") -> str:
+    warning = manifest_warning(project_dir)
+    sections: list[str] = []
+    if warning:
+        sections.append(warning)
+    sections.extend(
+        [
+            "Review focus paths",
+            paths or "No paths provided.",
+            "File snippets",
+            read_path_snippets(project_dir, paths),
         ]
     )
     return "\n\n".join(sections)

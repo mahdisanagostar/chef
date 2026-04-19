@@ -26,8 +26,10 @@ policy_ops = importlib.import_module("chef.policy")
 def run_command(func, **kwargs: object) -> tuple[int, str, str]:
     stdout = StringIO()
     stderr = StringIO()
+    defaults = {"json": False, "plan": False}
+    defaults.update(kwargs)
     with redirect_stdout(stdout), redirect_stderr(stderr):
-        code = func(SimpleNamespace(**kwargs))
+        code = func(SimpleNamespace(**defaults))
     return code, stdout.getvalue(), stderr.getvalue()
 
 
@@ -87,13 +89,13 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="claude", offline=False
                 )
             self.assertEqual(code, 0)
-            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
+            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project), json=False)
             self.assertEqual(code, 0)
 
     def test_existing_vault_content_survives_init(self) -> None:
@@ -144,13 +146,13 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="claude", offline=False
                 )
             self.assertEqual(code, 0)
-            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
+            code, _, _ = run_command(chef_cli.cmd_verify, project=str(project), json=False)
             self.assertEqual(code, 0)
 
     def test_existing_vault_requires_real_path(self) -> None:
@@ -252,7 +254,7 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertEqual(code, 0)
 
-            code, stdout, _ = run_command(chef_cli.cmd_pack_status, project=str(project))
+            code, stdout, _ = run_command(chef_cli.cmd_pack_status, project=str(project), json=True)
             self.assertEqual(code, 0)
             status = json.loads(stdout)
 
@@ -279,7 +281,7 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, stdout, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex", offline=False
@@ -323,7 +325,7 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex", offline=False
@@ -359,7 +361,7 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex", offline=True
@@ -496,19 +498,98 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex", offline=True
                 )
 
             self.assertEqual(code, 0)
-            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project))
+            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project), json=True)
             self.assertEqual(code, 0)
-            checks = json.loads(stdout)
+            checks = json.loads(stdout)["checks"]
             self.assertTrue(checks["mcp:chef-knowledge-mcp"])
             self.assertTrue(checks["item:chef-index"])
             self.assertTrue(checks["item:graph-first-retrieval"])
+
+    def test_install_writes_install_state_for_bundled_items(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
+
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex", offline=True
+                )
+
+            self.assertEqual(code, 0)
+            install_state = json.loads(
+                (project / ".chef" / "install-state.json").read_text(encoding="utf-8")
+            )
+            self.assertIn("codex:chef-index", install_state["items"])
+            self.assertIn("codex:graph-first-retrieval", install_state["items"])
+            self.assertEqual(install_state["items"]["codex:chef-index"]["fidelity"], "direct")
+
+    def test_review_and_security_packs_enable_builtin_mcp_servers(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":["review","security"]}\n', encoding="utf-8"
+            )
+
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex", offline=True
+                )
+
+            self.assertEqual(code, 0)
+            mcp_data = json.loads(
+                (project / ".codex-plugin" / ".mcp.json").read_text(encoding="utf-8")
+            )
+            self.assertIn("chef-review-mcp", mcp_data["mcpServers"])
+            self.assertIn("chef-security-mcp", mcp_data["mcpServers"])
+
+    def test_install_plan_reports_hosts_and_prune(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            stale_skill = project / ".codex" / "skills" / "gstack"
+            stale_skill.mkdir(parents=True)
+            (stale_skill / "SKILL.md").write_text("# stale\n", encoding="utf-8")
+
+            code, stdout, _ = run_command(
+                chef_cli.cmd_install,
+                project=str(project),
+                host="codex",
+                offline=True,
+                plan=True,
+                json=True,
+            )
+            self.assertEqual(code, 0)
+            plan = json.loads(stdout)
+            self.assertIn("codex", plan["hosts"])
+            self.assertIn(str(stale_skill.resolve()), plan["hosts"]["codex"]["prune"])
 
     def test_pack_enable_installs_new_pack_assets_for_project_host(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -524,12 +605,13 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, stdout, _ = run_command(
                     chef_cli.cmd_pack_enable,
                     project=str(project),
                     offline=True,
+                    json=True,
                     pack=["media"],
                 )
 
@@ -568,7 +650,7 @@ class ChefCliTests(unittest.TestCase):
             with patch.object(
                 external_ops,
                 "sync_external_items",
-                return_value=external_ops.SyncResult([], [], []),
+                return_value=external_ops.SyncResult([], [], [], []),
             ):
                 code, _, _ = run_command(
                     chef_cli.cmd_install, project=str(project), host="codex", offline=True
@@ -577,9 +659,9 @@ class ChefCliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             (project / "AGENTS.md").write_text("# drift\n", encoding="utf-8")
 
-            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project))
+            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project), json=True)
             self.assertEqual(code, 1)
-            checks = json.loads(stdout)
+            checks = json.loads(stdout)["checks"]
             self.assertFalse(checks["codex_policy_index"])
 
     def test_resolve_graphify_binary_prefers_local_virtualenv(self) -> None:

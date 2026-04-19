@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import shutil
@@ -13,7 +14,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from chef.catalog import read_item_catalog
-from chef.hosts import replace_path
+from chef.hosts import codex_builtin_mcp_servers, replace_path
+from chef.install_state import record_for
 from chef.paths import (
     claude_plugin_dir,
     claude_skill_dir,
@@ -38,6 +40,7 @@ class SyncResult:
     actions: list[str]
     warnings: list[str]
     errors: list[str]
+    states: list[dict[str, object]]
 
 
 @dataclass
@@ -46,6 +49,8 @@ class Snapshot:
     material_kind: str
     material_path: Path | None = None
     text: str | None = None
+    source_mode: str = "unknown"
+    resolved_ref: str | None = None
 
 
 @dataclass
@@ -55,6 +60,38 @@ class GitHubSource:
     ref: str | None
     subpath: str | None
     mode: str
+
+
+def item_source_ref(item: dict[str, object], source: GitHubSource | None) -> str | None:
+    configured = item.get("source_ref")
+    if isinstance(configured, str) and configured:
+        return configured
+    if source is None:
+        return None
+    return source.ref or "main"
+
+
+def item_source_subpath(item: dict[str, object], source: GitHubSource | None) -> str | None:
+    configured = item.get("source_subpath")
+    if isinstance(configured, str) and configured.strip():
+        return configured.strip().lstrip("/")
+    if source is None or not source.subpath:
+        return None
+    return source.subpath
+
+
+def item_source_kind(item: dict[str, object]) -> str:
+    configured = item.get("source_kind")
+    if isinstance(configured, str) and configured:
+        return configured
+    kind = str(item.get("kind", "skill"))
+    if kind == "plugin":
+        return "plugin"
+    if kind == "mcp_server":
+        return "mcp_server"
+    if kind in {"repo", "tool"}:
+        return kind
+    return "skill"
 
 
 class HtmlTextExtractor(HTMLParser):
@@ -255,18 +292,63 @@ def snapshot_from_cache(project: Path, item: dict[str, object]) -> Snapshot | No
     if not cache_dir.exists():
         return None
 
+    source_url = item.get("source_url")
+    github = parse_github_url(source_url) if isinstance(source_url, str) else None
+    repo_roots = [path for path in cache_dir.iterdir() if path.is_dir()]
+    if github and len(repo_roots) == 1:
+        repo_root = repo_roots[0]
+        try:
+            if github.mode == "repo":
+                mode, material = resolve_repo_material(repo_root, item)
+                return Snapshot(
+                    cache_dir=cache_dir,
+                    material_kind="dir" if material.is_dir() else "file",
+                    material_path=material,
+                    source_mode=f"cache-{mode}",
+                    resolved_ref=item_source_ref(item, github),
+                )
+            if github.mode == "tree":
+                subpath = item_source_subpath(item, github)
+                if subpath:
+                    material = repo_root / subpath
+                    if material.exists():
+                        return Snapshot(
+                            cache_dir=cache_dir,
+                            material_kind="dir" if material.is_dir() else "file",
+                            material_path=material,
+                            source_mode="cache-github-tree",
+                            resolved_ref=item_source_ref(item, github),
+                        )
+        except InstallError:
+            pass
+
     skill_dir = detect_skill_dir(cache_dir, str(item["id"]))
     if skill_dir is not None:
-        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=skill_dir)
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="dir",
+            material_path=skill_dir,
+            source_mode="cache-skill-dir",
+        )
 
     plugin_dir = detect_claude_plugin_dir(cache_dir)
     if plugin_dir is not None:
-        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=plugin_dir)
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="dir",
+            material_path=plugin_dir,
+            source_mode="cache-plugin-dir",
+        )
 
     for filename in ("SKILL.md", "README.md"):
         path = cache_dir / filename
         if path.exists():
-            return Snapshot(cache_dir=cache_dir, material_kind="file", material_path=path)
+            return Snapshot(
+                cache_dir=cache_dir,
+                material_kind="file",
+                material_path=path,
+                source_mode="cache-file",
+            )
 
     for filename in ("page.txt", "fallback.txt"):
         path = cache_dir / filename
@@ -275,13 +357,24 @@ def snapshot_from_cache(project: Path, item: dict[str, object]) -> Snapshot | No
                 cache_dir=cache_dir,
                 material_kind="text",
                 text=path.read_text(encoding="utf-8", errors="ignore"),
+                source_mode="cache-text",
             )
 
     directories = [path for path in cache_dir.iterdir() if path.is_dir()]
     if len(directories) == 1:
-        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=directories[0])
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="dir",
+            material_path=directories[0],
+            source_mode="cache-dir",
+        )
 
-    return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=cache_dir)
+    return Snapshot(
+        cache_dir=cache_dir,
+        material_kind="dir",
+        material_path=cache_dir,
+        source_mode="cache-dir",
+    )
 
 
 def extract_html_text(payload: bytes) -> str:
@@ -315,55 +408,106 @@ def fetch_snapshot(project: Path, item: dict[str, object], offline: bool = False
 
     cache_dir = ensure_clean_cache(project, item_id)
     github = parse_github_url(source_url)
+    source_ref = item_source_ref(item, github)
+    source_subpath = item_source_subpath(item, github)
 
     if github and github.mode == "blob":
-        ref = github.ref or "main"
+        ref = source_ref or "main"
         try:
-            payload, _ = request_bytes(raw_github_url(github, ref))
+            payload, _ = request_bytes(
+                raw_github_url(
+                    GitHubSource(
+                        owner=github.owner,
+                        repo=github.repo,
+                        ref=ref,
+                        subpath=source_subpath,
+                        mode="blob",
+                    ),
+                    ref,
+                )
+            )
         except urllib.error.HTTPError as exc:
             if exc.code != 404:
                 raise
             repo_root = download_repo_zip(github, ref, cache_dir)
-            if not github.subpath:
+            if not source_subpath:
                 raise InstallError("GitHub blob URL missing path.")
-            material = repo_root / github.subpath
+            material = repo_root / source_subpath
             if not material.exists():
-                raise InstallError(f"Path not found in downloaded repo: {github.subpath}") from exc
+                raise InstallError(f"Path not found in downloaded repo: {source_subpath}") from exc
             kind = "dir" if material.is_dir() else "file"
-            return Snapshot(cache_dir=cache_dir, material_kind=kind, material_path=material)
-        material = cache_dir / Path(github.subpath or "SKILL.md").name
+            return Snapshot(
+                cache_dir=cache_dir,
+                material_kind=kind,
+                material_path=material,
+                source_mode="github-blob-fallback",
+                resolved_ref=ref,
+            )
+        material = cache_dir / Path(source_subpath or "SKILL.md").name
         material.write_bytes(payload)
-        return Snapshot(cache_dir=cache_dir, material_kind="file", material_path=material)
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="file",
+            material_path=material,
+            source_mode="github-blob",
+            resolved_ref=ref,
+        )
 
     if github and github.mode == "tree":
-        repo_root = download_repo_zip(github, github.ref or "main", cache_dir)
-        if not github.subpath:
+        ref = source_ref or "main"
+        repo_root = download_repo_zip(github, ref, cache_dir)
+        if not source_subpath:
             raise InstallError("GitHub tree URL missing path.")
-        material = repo_root / github.subpath
+        material = repo_root / source_subpath
         if not material.exists():
-            raise InstallError(f"Path not found in downloaded repo: {github.subpath}")
-        return Snapshot(cache_dir=cache_dir, material_kind="dir", material_path=material)
+            raise InstallError(f"Path not found in downloaded repo: {source_subpath}")
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="dir" if material.is_dir() else "file",
+            material_path=material,
+            source_mode="github-tree",
+            resolved_ref=ref,
+        )
 
     if github and github.mode == "repo":
-        for ref in ("main", "master"):
-            try:
-                payload, _ = request_bytes(repo_readme_url(github, ref))
-            except urllib.error.HTTPError:
+        refs = [source_ref] if source_ref else ["main", "master"]
+        last_error: Exception | None = None
+        for ref in refs:
+            if not ref:
                 continue
-            material = cache_dir / "README.md"
-            material.write_bytes(payload)
-            return Snapshot(cache_dir=cache_dir, material_kind="file", material_path=material)
-        raise InstallError(f"Could not fetch README for {source_url}")
+            try:
+                repo_root = download_repo_zip(github, ref, cache_dir)
+            except (InstallError, urllib.error.URLError, urllib.error.HTTPError) as exc:
+                last_error = exc
+                continue
+            mode, material = resolve_repo_material(repo_root, item)
+            return Snapshot(
+                cache_dir=cache_dir,
+                material_kind="dir" if material.is_dir() else "file",
+                material_path=material,
+                source_mode=mode,
+                resolved_ref=ref,
+            )
+        if last_error is not None:
+            raise InstallError(
+                f"Could not download repo for {source_url}: {last_error}"
+            ) from last_error
+        raise InstallError(f"Could not resolve repo source for {source_url}")
 
     payload, content_type = request_bytes(source_url)
     if content_type in {"text/markdown", "text/plain"}:
         material = cache_dir / "SKILL.md"
         material.write_bytes(payload)
-        return Snapshot(cache_dir=cache_dir, material_kind="file", material_path=material)
+        return Snapshot(
+            cache_dir=cache_dir,
+            material_kind="file",
+            material_path=material,
+            source_mode="web-text",
+        )
 
     text = extract_html_text(payload)
     (cache_dir / "page.txt").write_text(text, encoding="utf-8")
-    return Snapshot(cache_dir=cache_dir, material_kind="text", text=text)
+    return Snapshot(cache_dir=cache_dir, material_kind="text", text=text, source_mode="web-html")
 
 
 def fallback_snapshot(project: Path, item: dict[str, object], exc: Exception) -> Snapshot:
@@ -374,7 +518,7 @@ def fallback_snapshot(project: Path, item: dict[str, object], exc: Exception) ->
         f"Error: {exc}\n"
     )
     (cache_dir / "fallback.txt").write_text(text, encoding="utf-8")
-    return Snapshot(cache_dir=cache_dir, material_kind="text", text=text)
+    return Snapshot(cache_dir=cache_dir, material_kind="text", text=text, source_mode="fallback")
 
 
 def find_readme(path: Path) -> str | None:
@@ -382,6 +526,14 @@ def find_readme(path: Path) -> str | None:
         file_path = path / candidate
         if file_path.exists():
             return file_path.read_text(encoding="utf-8", errors="ignore")
+    return None
+
+
+def repo_readme_path(path: Path) -> Path | None:
+    for candidate in ("README.md", "readme.md", "README.txt"):
+        file_path = path / candidate
+        if file_path.exists():
+            return file_path
     return None
 
 
@@ -403,6 +555,8 @@ def detect_skill_dir(path: Path, item_id: str) -> Path | None:
 def detect_claude_plugin_dir(path: Path) -> Path | None:
     if path.is_dir() and (path / ".claude-plugin" / "plugin.json").exists():
         return path
+    if path.is_dir() and (path / "plugin.json").exists():
+        return path
 
     if not path.is_dir():
         return None
@@ -410,9 +564,73 @@ def detect_claude_plugin_dir(path: Path) -> Path | None:
     plugin_matches = [
         match.parent.parent for match in matches if match.parent.name == ".claude-plugin"
     ]
+    plugin_matches.extend(
+        match.parent
+        for match in matches
+        if match.parent.name != ".claude-plugin" and (match.parent / "commands").exists()
+    )
     if len(plugin_matches) == 1:
         return plugin_matches[0]
     return None
+
+
+def repo_root_candidates(item_id: str) -> list[tuple[str, Path]]:
+    normalized = item_id.replace("-", "_")
+    return [
+        ("skills", Path("skills") / item_id),
+        ("skills-normalized", Path("skills") / normalized),
+        ("agents-skill", Path(".agents") / "skills" / item_id),
+        ("claude-skill", Path(".claude") / "skills" / item_id),
+        ("codex-skill", Path(".codex") / "skills" / item_id),
+    ]
+
+
+def resolve_repo_material(repo_root: Path, item: dict[str, object]) -> tuple[str, Path]:
+    explicit_subpath = item_source_subpath(item, None)
+    if explicit_subpath:
+        explicit_path = repo_root / explicit_subpath
+        if not explicit_path.exists():
+            raise InstallError(f"Path not found in downloaded repo: {explicit_subpath}")
+        if explicit_path.is_dir() and detect_claude_plugin_dir(explicit_path):
+            plugin_dir = detect_claude_plugin_dir(explicit_path) or explicit_path
+            return "github-repo-plugin", plugin_dir
+        if explicit_path.is_dir():
+            skill_dir = detect_skill_dir(explicit_path, str(item["id"]))
+            if skill_dir is not None:
+                return "github-repo-skill", skill_dir
+        return ("github-repo-dir" if explicit_path.is_dir() else "github-repo-file", explicit_path)
+
+    item_id = str(item["id"])
+    source_kind = item_source_kind(item)
+    if source_kind == "plugin":
+        plugin_dir = detect_claude_plugin_dir(repo_root)
+        if plugin_dir is not None:
+            return "github-repo-plugin", plugin_dir
+
+    if source_kind in {"skill", "mcp_server"}:
+        for mode, relative in repo_root_candidates(item_id):
+            candidate = repo_root / relative
+            if candidate.exists() and candidate.is_dir() and (candidate / "SKILL.md").exists():
+                return f"github-repo-{mode}", candidate
+        skill_dir = detect_skill_dir(repo_root, item_id)
+        if skill_dir is not None:
+            return "github-repo-skill", skill_dir
+
+    if source_kind in {"collection", "framework", "repo", "tool", "mcp_server"}:
+        readme_path = repo_readme_path(repo_root)
+        if readme_path is not None:
+            return "github-repo-readme", readme_path
+
+    plugin_dir = detect_claude_plugin_dir(repo_root)
+    if plugin_dir is not None:
+        return "github-repo-plugin", plugin_dir
+    skill_dir = detect_skill_dir(repo_root, item_id)
+    if skill_dir is not None:
+        return "github-repo-skill", skill_dir
+    readme_path = repo_readme_path(repo_root)
+    if readme_path is not None:
+        return "github-repo-readme", readme_path
+    return "github-repo-dir", repo_root
 
 
 def copy_directory(src: Path, dest: Path) -> None:
@@ -468,6 +686,87 @@ def build_wrapper_skill(
         body.append("")
 
     return wrapper_frontmatter(item) + title + "\n".join(body).strip() + "\n"
+
+
+def wrapper_expected(item: dict[str, object]) -> bool:
+    source_kind = item_source_kind(item)
+    return source_kind in {"collection", "framework", "repo", "tool", "mcp_server"} or str(
+        item.get("kind")
+    ) in {"repo", "tool", "mcp_server"}
+
+
+def snapshot_fidelity(
+    item: dict[str, object],
+    snapshot: Snapshot,
+    degraded_fetch: bool,
+    plugin_fallback: bool,
+) -> tuple[str, list[str], bool]:
+    warnings: list[str] = []
+    if degraded_fetch or plugin_fallback:
+        return "fallback", warnings, True
+
+    item_kind = str(item.get("kind"))
+    direct_skill = (
+        snapshot.material_path and detect_skill_dir(snapshot.material_path, str(item["id"]))
+    )
+    direct_plugin = snapshot.material_path and detect_claude_plugin_dir(snapshot.material_path)
+    if direct_skill or direct_plugin:
+        return "direct", warnings, False
+
+    if wrapper_expected(item):
+        if snapshot.source_mode in {"github-repo-readme", "web-html", "web-text", "cache-text"}:
+            warnings.append(
+                "Installed through wrapper content; runtime stays valid but "
+                "upstream fidelity stays limited."
+            )
+        return "wrapped", warnings, False
+
+    parsed = parse_github_url(str(item.get("source_url", "")))
+    if parsed and parsed.mode == "repo":
+        warnings.append(
+            "Repo-root source resolved to wrapper content. "
+            "Add source_subpath for higher-fidelity installs."
+        )
+        return "wrapped", warnings, False
+
+    if snapshot.source_mode in {"web-html", "web-text", "cache-text"} and item_kind == "plugin":
+        warnings.append("Plugin source did not resolve to a real plugin directory.")
+        return "fallback", warnings, True
+    return "wrapped", warnings, False
+
+
+def build_install_record(
+    project: Path,
+    host: str,
+    item: dict[str, object],
+    snapshot: Snapshot | None,
+    targets: list[str],
+    warnings: list[str],
+    errors: list[str],
+    degraded: bool,
+    fidelity: str,
+) -> dict[str, object]:
+    item_id = str(item["id"])
+    source_url = item.get("source_url")
+    return {
+        "item_id": item_id,
+        "host": host,
+        "kind": str(item["kind"]),
+        "install_method": str(item["install"]["method"]),
+        "targets": targets,
+        "installed": not errors and all(Path(target).exists() for target in targets),
+        "degraded": degraded,
+        "fidelity": fidelity,
+        "source_url": source_url if isinstance(source_url, str) else None,
+        "source_mode": snapshot.source_mode if snapshot is not None else "bundled",
+        "resolved_ref": snapshot.resolved_ref if snapshot is not None else None,
+        "warning_count": len(warnings),
+        "warnings": warnings,
+        "errors": errors,
+        "recorded_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "cache_dir": str(snapshot.cache_dir) if snapshot is not None else None,
+        "project": str(project),
+    }
 
 
 def replace_and_copy_skill(target: Path, skill_dir: Path | None, skill_content: str) -> list[str]:
@@ -584,6 +883,7 @@ def sync_external_items(
     actions: list[str] = []
     warnings: list[str] = []
     errors: list[str] = []
+    states: list[dict[str, object]] = []
     codex_mcp_items: list[dict[str, object]] = []
     offline_mode = offline_enabled(offline)
 
@@ -591,13 +891,17 @@ def sync_external_items(
         if item["install"]["method"] != "manual":
             continue
         snapshot: Snapshot
-        degraded = False
+        degraded_fetch = False
+        item_actions: list[str] = []
+        item_warnings: list[str] = []
+        item_errors: list[str] = []
+        plugin_fallback = False
         try:
             snapshot = fetch_snapshot(project, item, offline=offline_mode)
         except (InstallError, urllib.error.URLError) as exc:
             snapshot = fallback_snapshot(project, item, exc)
-            degraded = True
-            warnings.append(
+            degraded_fetch = True
+            item_warnings.append(
                 f"{item['id']}: upstream fetch failed, installed wrapper fallback instead."
             )
 
@@ -607,10 +911,11 @@ def sync_external_items(
                 plugin_actions, plugin_warnings = install_claude_plugin_item(
                     project, item, snapshot
                 )
-                actions.extend(plugin_actions)
-                warnings.extend(plugin_warnings)
+                item_actions.extend(plugin_actions)
+                item_warnings.extend(plugin_warnings)
                 if plugin_warnings:
-                    actions.extend(
+                    plugin_fallback = True
+                    item_actions.extend(
                         install_skill_like_item(
                             project,
                             host,
@@ -624,7 +929,7 @@ def sync_external_items(
                     )
             elif host == "codex" and kind == "mcp_server" and item.get("mcp"):
                 codex_mcp_items.append(item)
-                actions.extend(
+                item_actions.extend(
                     install_skill_like_item(
                         project,
                         host,
@@ -637,12 +942,36 @@ def sync_external_items(
                     )
                 )
             else:
-                extra_lines = ["Upstream fetch degraded."] if degraded else None
-                actions.extend(
+                extra_lines = ["Upstream fetch degraded."] if degraded_fetch else None
+                item_actions.extend(
                     install_skill_like_item(project, host, item, snapshot, extra_lines=extra_lines)
                 )
         except (InstallError, OSError, json.JSONDecodeError) as exc:
-            errors.append(f"{item['id']}: {exc}")
+            item_errors.append(f"{item['id']}: {exc}")
+
+        fidelity, fidelity_warnings, degraded = snapshot_fidelity(
+            item,
+            snapshot,
+            degraded_fetch=degraded_fetch,
+            plugin_fallback=plugin_fallback,
+        )
+        item_warnings.extend(fidelity_warnings)
+        actions.extend(item_actions)
+        warnings.extend(item_warnings)
+        errors.extend(item_errors)
+        states.append(
+            build_install_record(
+                project,
+                host,
+                item,
+                snapshot,
+                item_actions,
+                item_warnings,
+                item_errors,
+                degraded=degraded or bool(item_errors),
+                fidelity=fidelity,
+            )
+        )
 
     if host == "codex":
         try:
@@ -650,13 +979,14 @@ def sync_external_items(
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"codex-mcp-config: {exc}")
 
-    return SyncResult(actions=actions, warnings=warnings, errors=errors)
+    return SyncResult(actions=actions, warnings=warnings, errors=errors, states=states)
 
 
-def verify_external_items(
+def verify_external_items_report(
     project: Path, host: str, items: list[dict[str, object]]
-) -> dict[str, bool]:
+) -> tuple[dict[str, bool], list[str]]:
     checks: dict[str, bool] = {}
+    warnings: list[str] = []
     codex_servers: dict[str, object] = {}
     if host == "codex":
         try:
@@ -666,7 +996,8 @@ def verify_external_items(
                 codex_servers = loaded_servers
         except (FileNotFoundError, json.JSONDecodeError):
             codex_servers = {}
-        checks["mcp:chef-knowledge-mcp"] = "chef-knowledge-mcp" in codex_servers
+        for mcp_id in sorted(codex_builtin_mcp_servers(project)):
+            checks[f"mcp:{mcp_id}"] = mcp_id in codex_servers
 
     for item in items:
         item_id = str(item["id"])
@@ -678,6 +1009,8 @@ def verify_external_items(
                 checks[f"item:{item_id}"] = claude_skill_dir(project, item_id).exists()
             continue
 
+        state = record_for(project, host, item_id)
+        checks[f"install-state:{item_id}"] = state is not None
         if host == "codex":
             checks[f"item:{item_id}"] = codex_skill_dir(project, item_id).exists()
             if kind == "mcp_server" and item.get("mcp"):
@@ -690,4 +1023,34 @@ def verify_external_items(
                 )
             else:
                 checks[f"item:{item_id}"] = claude_skill_dir(project, item_id).exists()
+        if not state:
+            continue
+        if bool(state.get("degraded")):
+            checks[f"item:{item_id}"] = False
+        record_warnings = state.get("warnings")
+        if isinstance(record_warnings, list):
+            warnings.extend(
+                f"{item_id}: {warning}" for warning in record_warnings if isinstance(warning, str)
+            )
+        source_mode = str(state.get("source_mode", ""))
+        parsed_source = parse_github_url(str(item.get("source_url", "")))
+        if (
+            state.get("fidelity") == "wrapped"
+            and kind in {"skill", "plugin"}
+            and not wrapper_expected(item)
+            and (
+                "github-repo" in source_mode
+                or bool(parsed_source and parsed_source.mode == "repo")
+            )
+        ):
+            warnings.append(
+                f"{item_id}: wrapper install only. Add source_subpath or better source metadata."
+            )
+    return checks, warnings
+
+
+def verify_external_items(
+    project: Path, host: str, items: list[dict[str, object]]
+) -> dict[str, bool]:
+    checks, _ = verify_external_items_report(project, host, items)
     return checks

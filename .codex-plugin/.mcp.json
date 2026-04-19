@@ -4,6 +4,14 @@
       "command": "/Users/mahdi/Desktop/git/chef/.venv/bin/chef-knowledge-mcp",
       "args": []
     },
+    "chef-review-mcp": {
+      "command": "/Users/mahdi/Desktop/git/chef/.venv/bin/chef-review-mcp",
+      "args": []
+    },
+    "chef-security-mcp": {
+      "command": "/Users/mahdi/Desktop/git/chef/.venv/bin/chef-security-mcp",
+      "args": []
+    },
     "excel-mcp-server": {
       "command": "uvx",
       "args": [

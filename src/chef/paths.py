@@ -17,6 +17,10 @@ def vendor_dir(project: Path) -> Path:
     return chef_dir(project) / "vendor"
 
 
+def install_state_file(project: Path) -> Path:
+    return chef_dir(project) / "install-state.json"
+
+
 def claude_dir(project: Path) -> Path:
     return project / ".claude"
 

@@ -110,3 +110,57 @@ def read_text(path: Path) -> str:
     if not path.exists():
         return f"Missing file: {path}"
     return path.read_text(encoding="utf-8")
+
+
+def resolve_repo_paths(project_dir: str = ".", raw_paths: str = "") -> list[Path]:
+    project = resolve_project(project_dir)
+    resolved: list[Path] = []
+    for line in raw_paths.splitlines():
+        raw = line.strip()
+        if not raw:
+            continue
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            candidate = project / candidate
+        candidate = candidate.resolve()
+        if project == candidate or project in candidate.parents:
+            resolved.append(candidate)
+    return resolved
+
+
+def read_path_snippets(project_dir: str = ".", raw_paths: str = "", max_lines: int = 40) -> str:
+    project = resolve_project(project_dir)
+    sections: list[str] = []
+    for path in resolve_repo_paths(project_dir, raw_paths):
+        try:
+            relative = path.relative_to(project)
+        except ValueError:
+            relative = path
+        if not path.exists() or path.is_dir():
+            sections.append(f"{relative}\nMissing file.")
+            continue
+        lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        preview = "\n".join(lines[:max_lines])
+        sections.append(f"{relative}\n{preview}")
+    return "\n\n".join(sections) if sections else "No matching files."
+
+
+def report_excerpt(
+    project_dir: str = ".",
+    keywords: tuple[str, ...] = (),
+    limit: int = 20,
+) -> str:
+    report = read_text(graph_report_path(project_dir))
+    if report.startswith("Missing file:"):
+        return report
+    if not keywords:
+        lines = [line for line in report.splitlines() if line.strip()]
+        return "\n".join(lines[:limit])
+    matches = [
+        line
+        for line in report.splitlines()
+        if any(keyword.lower() in line.lower() for keyword in keywords)
+    ]
+    if not matches:
+        return "No matching graph report lines."
+    return "\n".join(matches[:limit])

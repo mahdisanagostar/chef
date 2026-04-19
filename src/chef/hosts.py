@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 
 from chef.catalog import read_item_catalog
+from chef.packs import read_enabled_packs
 from chef.paths import (
     ROOT,
     claude_commands_dir,
@@ -15,6 +16,12 @@ from chef.paths import (
     codex_plugin_dir,
     codex_skill_dir,
 )
+
+BUILTIN_MCP_IDS = {
+    "chef-knowledge-mcp",
+    "chef-review-mcp",
+    "chef-security-mcp",
+}
 
 
 def replace_path(target: Path) -> None:
@@ -105,12 +112,24 @@ def install_claude(
 
 
 def codex_builtin_mcp_servers(project: Path) -> dict[str, dict[str, object]]:
-    return {
+    servers = {
         "chef-knowledge-mcp": {
             "command": str(project.resolve() / ".venv" / "bin" / "chef-knowledge-mcp"),
             "args": [],
         }
     }
+    enabled_packs = set(read_enabled_packs(project).get("enabled", []))
+    if "review" in enabled_packs:
+        servers["chef-review-mcp"] = {
+            "command": str(project.resolve() / ".venv" / "bin" / "chef-review-mcp"),
+            "args": [],
+        }
+    if "security" in enabled_packs:
+        servers["chef-security-mcp"] = {
+            "command": str(project.resolve() / ".venv" / "bin" / "chef-security-mcp"),
+            "args": [],
+        }
+    return servers
 
 
 def ensure_codex_builtin_mcp(project: Path) -> Path:
@@ -123,7 +142,11 @@ def ensure_codex_builtin_mcp(project: Path) -> Path:
     servers = existing.get("mcpServers")
     if not isinstance(servers, dict):
         servers = {}
-    servers.update(codex_builtin_mcp_servers(project))
+    desired_servers = codex_builtin_mcp_servers(project)
+    for server_id in BUILTIN_MCP_IDS:
+        if server_id not in desired_servers:
+            servers.pop(server_id, None)
+    servers.update(desired_servers)
     desired = json.dumps({"mcpServers": servers}, indent=2) + "\n"
     if not mcp_path.exists() or mcp_path.read_text(encoding="utf-8") != desired:
         mcp_path.write_text(desired, encoding="utf-8")

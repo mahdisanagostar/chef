@@ -11,7 +11,8 @@
     "kind": "plugin",
     "hosts": ["claude"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/code-review"
+    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/code-review",
+    "source_kind": "plugin"
   },
   "brand-guidelines": {
     "name": "Brand Guidelines",
@@ -46,7 +47,8 @@
     "kind": "plugin",
     "hosts": ["claude"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/thedotmack/claude-mem"
+    "source_url": "https://github.com/thedotmack/claude-mem",
+    "source_kind": "plugin"
   },
   "claude-seo": {
     "name": "Claude SEO",
@@ -54,6 +56,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/AgriciDaniel/claude-seo",
+    "source_kind": "skill",
     "adapter_notes": {
       "codex": [
         "Use for SEO-specific work only; ignore upstream Claude plugin install sections.",
@@ -67,6 +70,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/tirth8205/code-review-graph",
+    "source_kind": "skill",
     "adapter_notes": {
       "codex": [
         "Treat this as graph-backed review support, not the default reviewer.",
@@ -100,6 +104,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/haris-musa/excel-mcp-server",
+    "source_kind": "mcp_server",
     "adapter_notes": {
       "codex": [
         "Use when an MCP-backed spreadsheet workflow is required across tools or sessions.",
@@ -143,7 +148,8 @@
     "kind": "tool",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://pypi.org/project/graphifyy/"
+    "source_url": "https://pypi.org/project/graphifyy/",
+    "source_kind": "tool"
   },
   "gstack": {
     "name": "gstack",
@@ -151,6 +157,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/garrytan/gstack",
+    "source_kind": "framework",
     "adapter_notes": {
       "codex": [
         "Treat gstack as an optional orchestration framework, not a default Codex lane.",
@@ -177,14 +184,16 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/coreyhaines31/marketingskills"
+    "source_url": "https://github.com/coreyhaines31/marketingskills",
+    "source_kind": "collection"
   },
   "massgen": {
     "name": "MassGen",
     "kind": "repo",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/massgen/MassGen"
+    "source_url": "https://github.com/massgen/MassGen",
+    "source_kind": "framework"
   },
   "notebooklm-mcp": {
     "name": "NotebookLM MCP",
@@ -192,6 +201,7 @@
     "hosts": ["codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/PleasePrompto/notebooklm-mcp",
+    "source_kind": "mcp_server",
     "mcp": {
       "command": "npx",
       "args": ["-y", "notebooklm-mcp@latest"]
@@ -265,7 +275,8 @@
     "kind": "repo",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/remotion-dev/remotion"
+    "source_url": "https://github.com/remotion-dev/remotion",
+    "source_kind": "repo"
   },
   "remotion-best-practices": {
     "name": "Remotion Best Practices",
@@ -280,6 +291,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/ruvnet/ruflo",
+    "source_kind": "framework",
     "adapter_notes": {
       "codex": [
         "Treat Ruflo as a heavyweight orchestration or MCP framework, not a default baseline skill.",
@@ -305,7 +317,8 @@
     "kind": "plugin",
     "hosts": ["claude"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/security-guidance"
+    "source_url": "https://github.com/anthropics/claude-code/tree/main/plugins/security-guidance",
+    "source_kind": "plugin"
   },
   "skill-creator": {
     "name": "Skill Creator",
@@ -340,6 +353,7 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/obra/superpowers",
+    "source_kind": "framework",
     "adapter_notes": {
       "codex": [
         "Treat Superpowers as a broad methodology pack, not a default routing target.",
