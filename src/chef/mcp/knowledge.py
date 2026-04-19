@@ -107,7 +107,11 @@ def read_graph_page(project_dir: str = ".", page: str = "index.md") -> str:
 
 
 @mcp.tool()
-def search_vault_notes(project_dir: str = ".", query: str = "", limit: int = 10) -> dict[str, object]:
+def search_vault_notes(
+    project_dir: str = ".",
+    query: str = "",
+    limit: int = 10,
+) -> dict[str, object]:
     vault = vault_dir(project_dir)
     normalized = query.strip().lower()
     matches: list[dict[str, object]] = []
@@ -159,7 +163,12 @@ def read_note(project_dir: str = ".", note: str = "") -> str:
 
 
 @mcp.tool()
-def write_note(project_dir: str = ".", note: str = "", content: str = "", append: bool = False) -> str:
+def write_note(
+    project_dir: str = ".",
+    note: str = "",
+    content: str = "",
+    append: bool = False,
+) -> str:
     path, error = resolve_note_path(project_dir, note, create=True)
     if error:
         return error

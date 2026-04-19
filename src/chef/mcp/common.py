@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import PurePosixPath
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import cast
 
 from chef import scaffold
-
 
 IGNORED_VAULT_DIRS = {".obsidian"}
 
@@ -73,7 +71,11 @@ def note_identifier(path: Path, vault: Path) -> str:
     return cast(str, PurePosixPath(note_rel_path(path, vault)).with_suffix("").as_posix())
 
 
-def resolve_note_path(project_dir: str = ".", note: str = "", create: bool = False) -> tuple[Path | None, str | None]:
+def resolve_note_path(
+    project_dir: str = ".",
+    note: str = "",
+    create: bool = False,
+) -> tuple[Path | None, str | None]:
     vault = vault_dir(project_dir)
     raw_note = note.strip()
     if not raw_note:
