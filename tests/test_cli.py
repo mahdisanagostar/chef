@@ -482,9 +482,23 @@ class ChefCliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             status = json.loads(stdout)
             self.assertIn("media", status["enabled"])
+            self.assertIn("talkcraft", status["enabled_items"])
             self.assertIn("remotion-best-practices", status["enabled_items"])
             self.assertTrue(
+                (
+                    project
+                    / ".codex"
+                    / "skills"
+                    / "talkcraft"
+                    / "SKILL.md"
+                ).exists()
+            )
+            self.assertTrue(
                 (project / ".codex" / "skills" / "remotion-best-practices" / "SKILL.md").exists()
+            )
+            self.assertIn(
+                "$talkcraft",
+                (project / "AGENTS.md").read_text(),
             )
             self.assertIn("$remotion-best-practices", (project / "AGENTS.md").read_text())
             self.assertTrue(status["installed"])

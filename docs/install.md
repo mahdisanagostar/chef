@@ -69,6 +69,7 @@ chef pack-enable --project . --pack ux --pack media --offline
 ```
 
 `chef pack-enable` now writes enabled-pack state and installs pack assets for the project host in one step.
+The `media` pack includes `talkcraft` for presentation strategy and rehearsal support.
 
 Local wrapper without editable install:
 

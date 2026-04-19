@@ -1,0 +1,7 @@
+interface:
+  display_name: "Talkcraft"
+  short_description: "Plan and sharpen high-stakes presentations"
+  default_prompt: "Use $talkcraft to design or improve this presentation with Winston-style structure, delivery, and rehearsal discipline."
+
+policy:
+  allow_implicit_invocation: true

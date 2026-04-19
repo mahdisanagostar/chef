@@ -69,6 +69,7 @@ Chef manages this file as the project policy and central runtime index for Codex
 - `$skill-finder`
 - `$spec-miner`
 - `$superpowers`
+- `$talkcraft`
 - `$the-fool`
 - `$theme-factory`
 - `$ui-ux-pro-max`

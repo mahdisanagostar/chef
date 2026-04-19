@@ -63,6 +63,7 @@ Chef manages this file as the project policy and central runtime index for Claud
 - `skill-creator`
 - `spec-miner`
 - `superpowers`
+- `talkcraft`
 - `the-fool`
 - `theme-factory`
 - `ui-ux-pro-max`
