@@ -10,6 +10,7 @@ Chef provides one modular enhancement package for Claude and Codex.
 - Structured Obsidian knowledge base.
 - Native host routing.
 - Optional domain packs.
+- Isolated orchestration frameworks.
 - Built-in MCP servers.
 - One capability catalog for pack resolution.
 
@@ -55,6 +56,7 @@ chef install --host both --project .
 - `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
 - Codex writes built-in `chef-knowledge-mcp` plus catalog MCP entries into project-local `.codex-plugin/.mcp.json`
 - baseline routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` stay installed as always-on Chef defaults
+- heavy orchestration frameworks stay out of `core` and live in the optional `orchestration` pack
 
 Enable more packs after initial install:
 
@@ -92,6 +94,7 @@ python -m unittest discover -s tests -v
 - [docs/architecture.md](docs/architecture.md)
 - [docs/catalog-schema.md](docs/catalog-schema.md)
 - [docs/install.md](docs/install.md)
+- [docs/skill-audit.md](docs/skill-audit.md)
 - [docs/manifest-schema.md](docs/manifest-schema.md)
 - [docs/publish.md](docs/publish.md)
 - [docs/tool-matrix.md](docs/tool-matrix.md)

@@ -1,0 +1,10 @@
+{
+  "name": "orchestration",
+  "enabled_by_default": false,
+  "items": [
+    "gstack",
+    "massgen",
+    "ruflo",
+    "superpowers"
+  ]
+}

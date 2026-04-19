@@ -16,6 +16,32 @@ external_ops = importlib.import_module("chef.external")
 
 
 class ChefExternalTests(unittest.TestCase):
+    def test_extract_html_text_ignores_scripts_and_prefers_article(self) -> None:
+        html = b"""
+        <html>
+          <head>
+            <style>.ignored { color: red; }</style>
+            <script>window.noise = true;</script>
+          </head>
+          <body>
+            <main>
+              <nav>Navigation noise</nav>
+              <article>
+                <h1>Useful Title</h1>
+                <p>Primary content only.</p>
+              </article>
+            </main>
+          </body>
+        </html>
+        """
+
+        text = external_ops.extract_html_text(html)
+
+        self.assertIn("Useful Title", text)
+        self.assertIn("Primary content only.", text)
+        self.assertNotIn("window.noise", text)
+        self.assertNotIn("ignored", text)
+
     def test_sync_external_installs_codex_wrapper_skill(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -33,6 +59,12 @@ class ChefExternalTests(unittest.TestCase):
                 "hosts": ["codex"],
                 "install": {"method": "manual"},
                 "source_url": "https://skills.example/sample-skill",
+                "adapter_notes": {
+                    "codex": [
+                        "Use Codex-native review output.",
+                        "Keep the scope tight.",
+                    ]
+                },
             }
 
             with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
@@ -41,7 +73,10 @@ class ChefExternalTests(unittest.TestCase):
             self.assertEqual(result.errors, [])
             target = project / ".codex" / "skills" / "sample-skill" / "SKILL.md"
             self.assertTrue(target.exists())
-            self.assertIn("Imported skill text", target.read_text(encoding="utf-8"))
+            text = target.read_text(encoding="utf-8")
+            self.assertIn("Imported skill text", text)
+            self.assertIn("## Chef Adapter Notes", text)
+            self.assertIn("Use Codex-native review output.", text)
 
     def test_sync_external_installs_claude_plugin_when_detected(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -73,6 +108,83 @@ class ChefExternalTests(unittest.TestCase):
             self.assertEqual(result.warnings, [])
             target = project / ".claude" / "plugins" / "local" / "sample-plugin"
             self.assertTrue((target / ".claude-plugin" / "plugin.json").exists())
+
+    def test_sync_external_plugin_install_clears_old_skill_wrapper(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            plugin_root = project / ".chef" / "vendor" / "sample-plugin" / "plugin-root"
+            (plugin_root / ".claude-plugin").mkdir(parents=True)
+            (plugin_root / ".claude-plugin" / "plugin.json").write_text(
+                '{"name":"sample"}\n', encoding="utf-8"
+            )
+            old_skill = project / ".claude" / "skills" / "sample-plugin"
+            old_skill.mkdir(parents=True)
+            (old_skill / "SKILL.md").write_text("# stale wrapper\n", encoding="utf-8")
+            snapshot = external_ops.Snapshot(
+                cache_dir=project / ".chef" / "vendor" / "sample-plugin",
+                material_kind="dir",
+                material_path=plugin_root,
+            )
+            item = {
+                "id": "sample-plugin",
+                "name": "Sample Plugin",
+                "kind": "plugin",
+                "hosts": ["claude"],
+                "install": {"method": "manual"},
+                "source_url": "https://github.com/example/plugin/tree/main/plugins/sample",
+            }
+
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
+                result = external_ops.sync_external_items(project, "claude", [item])
+
+            self.assertEqual(result.errors, [])
+            self.assertFalse(old_skill.exists())
+            self.assertTrue(
+                (
+                    project
+                    / ".claude"
+                    / "plugins"
+                    / "local"
+                    / "sample-plugin"
+                    / ".claude-plugin"
+                    / "plugin.json"
+                ).exists()
+            )
+
+    def test_sync_external_plugin_fallback_clears_old_plugin_dir(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            old_plugin = project / ".claude" / "plugins" / "local" / "sample-plugin"
+            (old_plugin / ".claude-plugin").mkdir(parents=True)
+            (old_plugin / ".claude-plugin" / "plugin.json").write_text(
+                '{"name":"old"}\n', encoding="utf-8"
+            )
+            snapshot = external_ops.Snapshot(
+                cache_dir=project / ".chef" / "vendor" / "sample-plugin",
+                material_kind="text",
+                text="Fallback plugin wrapper",
+            )
+            snapshot.cache_dir.mkdir(parents=True)
+            item = {
+                "id": "sample-plugin",
+                "name": "Sample Plugin",
+                "kind": "plugin",
+                "hosts": ["claude"],
+                "install": {"method": "manual"},
+                "source_url": "https://github.com/example/plugin/tree/main/plugins/sample",
+            }
+
+            with patch.object(external_ops, "fetch_snapshot", return_value=snapshot):
+                result = external_ops.sync_external_items(project, "claude", [item])
+
+            self.assertEqual(result.errors, [])
+            self.assertTrue(result.warnings)
+            self.assertFalse(old_plugin.exists())
+            self.assertTrue(
+                (project / ".claude" / "skills" / "sample-plugin" / "SKILL.md").exists()
+            )
 
     def test_sync_external_writes_codex_mcp_config(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -113,6 +225,40 @@ class ChefExternalTests(unittest.TestCase):
                 (project / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
             )
             self.assertEqual(plugin_data["mcpServers"], "./.mcp.json")
+
+    def test_sync_external_prunes_stale_codex_mcp_entries(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            plugin_dir = project / ".codex-plugin"
+            plugin_dir.mkdir(parents=True)
+            (plugin_dir / "plugin.json").write_text(
+                '{"name":"chef","version":"0.1.0","mcpServers":"./.mcp.json"}\n',
+                encoding="utf-8",
+            )
+            (plugin_dir / ".mcp.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "chef-knowledge-mcp": {"command": "local", "args": []},
+                            "excel-mcp-server": {"command": "uvx", "args": ["excel"]},
+                            "notebooklm-mcp": {"command": "uvx", "args": ["notebooklm"]},
+                            "custom-server": {"command": "custom", "args": []},
+                        }
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = external_ops.sync_external_items(project, "codex", [])
+
+            self.assertEqual(result.errors, [])
+            mcp_data = json.loads((plugin_dir / ".mcp.json").read_text(encoding="utf-8"))
+            self.assertIn("chef-knowledge-mcp", mcp_data["mcpServers"])
+            self.assertIn("custom-server", mcp_data["mcpServers"])
+            self.assertNotIn("excel-mcp-server", mcp_data["mcpServers"])
+            self.assertNotIn("notebooklm-mcp", mcp_data["mcpServers"])
 
     def test_sync_external_falls_back_to_wrapper_on_fetch_error(self) -> None:
         with TemporaryDirectory() as tmp:

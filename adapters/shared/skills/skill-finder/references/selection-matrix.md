@@ -57,6 +57,18 @@ Use this file when the best skill is not obvious from the request alone.
 - React Three Fiber game work -> `game-studio:react-three-fiber-game`
 - plain Three.js game work -> `game-studio:three-webgl-game`
 
+## Heavy Orchestration
+
+- explicit gstack workflow request -> `gstack`
+- explicit multi-agent benchmarking or debate workflow -> `massgen`
+- explicit Ruflo swarm, hooks, or MCP orchestration -> `ruflo`
+- explicit Superpowers methodology request -> `superpowers`
+
+Rule:
+
+- never default to a heavy orchestration framework when a normal skill can solve the task
+- choose at most one of `gstack`, `massgen`, `ruflo`, `superpowers`
+
 ## Build And Refactor
 
 - new feature or implementation plan -> `feature-forge`
@@ -76,7 +88,8 @@ Use this file when the best skill is not obvious from the request alone.
 
 - graph-first repo or vault retrieval -> `graphify`
 - external knowledge synthesis or retrieval architecture -> `rag-architect`
-- notebook-driven research flow -> `notebooklm-mcp`
+- NotebookLM for Codex or MCP-backed use -> `notebooklm-mcp`
+- NotebookLM for Claude local skill flow -> `notebooklm-skill`
 - Obsidian-oriented knowledge work -> `obsidian-skills`
 - formal spec extraction -> `spec-miner`
 
@@ -100,7 +113,7 @@ Use this file when the best skill is not obvious from the request alone.
 
 - SEO-oriented content or strategy -> `claude-seo`
 - marketing tasks -> `marketingskills`
-- spreadsheet-heavy work -> `excel-mcp-server`
+- MCP-backed spreadsheet automation -> `excel-mcp-server`
 
 ## Creation Of New Skills
 
@@ -131,5 +144,6 @@ Use this file when the best skill is not obvious from the request alone.
 
 - stacking multiple generic skills when one specific skill fits
 - picking both Codex-native and Chef overlap twins for same layer
+- loading multiple orchestration frameworks for one task
 - using media skills for plain docs work
 - adding review skills before there is anything concrete to review

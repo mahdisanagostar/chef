@@ -4,9 +4,11 @@ import json
 import shutil
 from pathlib import Path
 
+from chef.catalog import read_item_catalog
 from chef.paths import (
     ROOT,
     claude_commands_dir,
+    claude_plugin_dir,
     claude_plugin_manifest_dir,
     claude_skill_dir,
     codex_mcp_file,
@@ -47,6 +49,37 @@ def install_bundled_skills(project: Path, host: str, items: list[dict[str, objec
         copy_asset(source, target)
         installed.append(str(target))
     return installed
+
+
+def managed_host_items(host: str) -> list[dict[str, object]]:
+    return [
+        item for item in read_item_catalog().values() if host in item.get("hosts", [])
+    ]
+
+
+def managed_item_paths(project: Path, host: str, item: dict[str, object]) -> list[Path]:
+    item_id = str(item["id"])
+    if host == "codex":
+        return [codex_skill_dir(project, item_id)]
+
+    paths = [claude_skill_dir(project, item_id)]
+    if str(item.get("kind")) == "plugin":
+        paths.append(claude_plugin_dir(project, item_id))
+    return paths
+
+
+def prune_host_items(project: Path, host: str, items: list[dict[str, object]]) -> list[str]:
+    enabled_ids = {str(item["id"]) for item in items}
+    removed: list[str] = []
+    for item in managed_host_items(host):
+        if str(item["id"]) in enabled_ids:
+            continue
+        for path in managed_item_paths(project, host, item):
+            if not path.exists():
+                continue
+            replace_path(path)
+            removed.append(str(path))
+    return removed
 
 
 def install_claude(

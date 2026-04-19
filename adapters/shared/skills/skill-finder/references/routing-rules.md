@@ -50,6 +50,10 @@ Do not pick both items from same overlap pair unless user explicitly asks:
 - `playwright` and `playwright-skill`
 - `frontend-design` and `build-web-apps:frontend-skill`
 - `code-reviewer` and `github:gh-address-comments`
+- `gstack` and `ruflo`
+- `gstack` and `massgen`
+- `ruflo` and `superpowers`
+- `massgen` and `superpowers`
 
 ## Fast Path
 

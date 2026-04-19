@@ -53,21 +53,39 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/AgriciDaniel/claude-seo"
+    "source_url": "https://github.com/AgriciDaniel/claude-seo",
+    "adapter_notes": {
+      "codex": [
+        "Use for SEO-specific work only; ignore upstream Claude plugin install sections.",
+        "Prefer this over generic marketing skills when the task asks for audits, schema, technical SEO, or search visibility fixes."
+      ]
+    }
   },
   "code-review-graph": {
     "name": "Code Review Graph",
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/tirth8205/code-review-graph"
+    "source_url": "https://github.com/tirth8205/code-review-graph",
+    "adapter_notes": {
+      "codex": [
+        "Treat this as graph-backed review support, not the default reviewer.",
+        "Prefer it when the change spans multiple modules or when blast-radius analysis matters."
+      ]
+    }
   },
   "code-reviewer": {
     "name": "Code Reviewer",
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/quality/code-reviewer/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/quality/code-reviewer/",
+    "adapter_notes": {
+      "codex": [
+        "Use Codex review style: findings first, file references, and behavior or regression risk before summaries.",
+        "Prefer this after concrete code exists; do not load it for planning-only work."
+      ]
+    }
   },
   "design-sprint": {
     "name": "Design Sprint",
@@ -82,6 +100,12 @@
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
     "source_url": "https://github.com/haris-musa/excel-mcp-server",
+    "adapter_notes": {
+      "codex": [
+        "Use when an MCP-backed spreadsheet workflow is required across tools or sessions.",
+        "For simple local workbook edits in Codex, prefer built-in spreadsheet skills first."
+      ]
+    },
     "mcp": {
       "command": "uvx",
       "args": ["excel-mcp-server", "stdio"]
@@ -92,7 +116,13 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/feature-forge/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/feature-forge/",
+    "adapter_notes": {
+      "codex": [
+        "Translate its output into executable implementation steps quickly; avoid long speculative plans.",
+        "Pair with using-git-worktrees when isolation helps and with code-reviewer only after code lands."
+      ]
+    }
   },
   "frontend-design": {
     "name": "Frontend Design",
@@ -120,7 +150,13 @@
     "kind": "repo",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/garrytan/gstack"
+    "source_url": "https://github.com/garrytan/gstack",
+    "adapter_notes": {
+      "codex": [
+        "Treat gstack as an optional orchestration framework, not a default Codex lane.",
+        "Load it only when the user explicitly wants gstack workflows or cross-agent browser QA."
+      ]
+    }
   },
   "hooked-ux": {
     "name": "Hooked UX",
@@ -173,7 +209,13 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/kepano/obsidian-skills"
+    "source_url": "https://github.com/kepano/obsidian-skills",
+    "adapter_notes": {
+      "codex": [
+        "Use for vault-oriented note workflows; pair with Graphify when graph context matters.",
+        "Treat the integration as file-based unless a dedicated Obsidian bridge is present."
+      ]
+    }
   },
   "owasp-security": {
     "name": "OWASP Security",
@@ -203,7 +245,13 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/data-ml/rag-architect/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/data-ml/rag-architect/",
+    "adapter_notes": {
+      "codex": [
+        "Use for retrieval architecture, evaluation design, and chunking or indexing tradeoffs.",
+        "Prefer primary-source docs and repo evidence over generic web summaries."
+      ]
+    }
   },
   "refactoring-ui": {
     "name": "Refactoring UI",
@@ -231,14 +279,26 @@
     "kind": "repo",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/ruvnet/ruflo"
+    "source_url": "https://github.com/ruvnet/ruflo",
+    "adapter_notes": {
+      "codex": [
+        "Treat Ruflo as a heavyweight orchestration or MCP framework, not a default baseline skill.",
+        "Do not combine it with gstack, superpowers, or massgen unless the user explicitly wants stacked orchestration."
+      ]
+    }
   },
   "secure-code-guardian": {
     "name": "Secure Code Guardian",
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/security/secure-code-guardian/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/security/secure-code-guardian/",
+    "adapter_notes": {
+      "codex": [
+        "Use only when security risk is real or explicitly requested; keep findings concrete and repo-grounded.",
+        "Pair with Codex security review skills only when threat modeling or framework-specific security guidance is needed."
+      ]
+    }
   },
   "security-guidance": {
     "name": "Security Guidance",
@@ -266,21 +326,39 @@
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/spec-miner/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/spec-miner/",
+    "adapter_notes": {
+      "codex": [
+        "Use to extract requirements from existing code, notes, or tickets before implementation.",
+        "In Codex, convert mined specs into concrete tasks or file changes instead of leaving them as passive notes."
+      ]
+    }
   },
   "superpowers": {
     "name": "Superpowers",
     "kind": "repo",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://github.com/obra/superpowers"
+    "source_url": "https://github.com/obra/superpowers",
+    "adapter_notes": {
+      "codex": [
+        "Treat Superpowers as a broad methodology pack, not a default routing target.",
+        "For isolated implementation in Codex, prefer the bundled using-git-worktrees skill instead of loading the full framework."
+      ]
+    }
   },
   "the-fool": {
     "name": "The Fool",
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {"method": "manual"},
-    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/the-fool/"
+    "source_url": "https://jeffallan.github.io/claude-skills/skills/workflow/the-fool/",
+    "adapter_notes": {
+      "codex": [
+        "Use as an adversarial challenge pass after a proposal, diff, or design exists.",
+        "Do not start with this skill; load it after feature-forge, code-reviewer, or architecture work has produced something concrete."
+      ]
+    }
   },
   "theme-factory": {
     "name": "Theme Factory",

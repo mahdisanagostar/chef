@@ -9,6 +9,7 @@
 - Secure Code Guardian
 - Using Git Worktrees
 - Frontend Design
+- Playwright Skill
 
 ## Optional Packs
 
@@ -38,6 +39,15 @@
 - RAG Architect
 - Obsidian helpers
 
+### Orchestration
+
+- gstack
+- MassGen
+- ruflo
+- Superpowers
+
+Use one orchestration framework at a time.
+
 ### Media
 
 - Patrick Winston presentation framework
@@ -52,4 +62,3 @@
 - claude-seo
 - marketingskills
 - excel-mcp-server
-

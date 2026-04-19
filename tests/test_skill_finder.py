@@ -104,8 +104,10 @@ class SkillFinderTests(unittest.TestCase):
             matrix,
         )
         self.assertIn("iOS simulator run or debug -> `build-ios-apps:ios-debugger-agent`", matrix)
+        self.assertIn("choose at most one of `gstack`, `massgen`, `ruflo`, `superpowers`", matrix)
         self.assertIn("Do not pick both items from same overlap pair", rules)
         self.assertIn("skip routing for trivial tasks", rules)
+        self.assertIn("`gstack` and `ruflo`", rules)
         self.assertIn("preferring host-native specialists", agent_prompt)
 
     def test_sync_mirror_uses_env_override(self) -> None:

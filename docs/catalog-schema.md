@@ -13,6 +13,7 @@ Each entry uses the item id as the JSON key and defines:
 - `install.path`: required for `bundled` items
 - `source_url`: required for `manual` items
 - `mcp`: optional command and args for Codex MCP registration
+- `adapter_notes`: optional host-specific wrapper notes for `claude` and or `codex`
 - `always_installed`: optional boolean for baseline bundled items
 
 Meaning:
@@ -21,6 +22,7 @@ Meaning:
 - `manual` items fetch from upstream URLs into `.chef/vendor/` and install into managed local targets
 - `always_installed` applies to bundled baseline items that should install even when no pack enables them
 - `mcp` lets Chef write Codex MCP server entries during install
+- `adapter_notes` lets Chef inject concise host-specific guidance ahead of imported upstream content
 
 Pack rules:
 

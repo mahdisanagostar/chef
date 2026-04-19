@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 
+from chef.catalog import read_item_catalog
 from chef.hosts import replace_path
 from chef.paths import (
     claude_plugin_dir,
@@ -60,43 +61,98 @@ class HtmlTextExtractor(HTMLParser):
     BLOCK_TAGS = {
         "article",
         "br",
+        "dd",
         "div",
+        "dl",
+        "dt",
+        "footer",
         "h1",
         "h2",
         "h3",
         "h4",
         "h5",
         "h6",
+        "header",
         "li",
+        "main",
+        "nav",
         "p",
         "pre",
         "section",
+        "table",
+        "tbody",
+        "td",
+        "th",
+        "thead",
+        "tr",
         "summary",
         "ul",
         "ol",
     }
+    IGNORED_TAGS = {
+        "head",
+        "script",
+        "style",
+        "noscript",
+        "svg",
+        "template",
+    }
 
     def __init__(self) -> None:
         super().__init__()
-        self.parts: list[str] = []
+        self.parts: dict[str, list[str]] = {"article": [], "main": [], "body": []}
+        self.capture_depth = {"article": 0, "main": 0, "body": 0}
+        self.ignored_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self.IGNORED_TAGS:
+            self.ignored_depth += 1
+            return
+        if self.ignored_depth:
+            return
+        if tag in self.capture_depth:
+            self.capture_depth[tag] += 1
         if tag in self.BLOCK_TAGS:
-            self.parts.append("\n")
+            self._append_break()
 
     def handle_endtag(self, tag: str) -> None:
+        if tag in self.IGNORED_TAGS:
+            if self.ignored_depth:
+                self.ignored_depth -= 1
+            return
+        if self.ignored_depth:
+            return
         if tag in self.BLOCK_TAGS:
-            self.parts.append("\n")
+            self._append_break()
+        if tag in self.capture_depth and self.capture_depth[tag]:
+            self.capture_depth[tag] -= 1
 
     def handle_data(self, data: str) -> None:
+        if self.ignored_depth:
+            return
         text = data.strip()
         if text:
-            self.parts.append(text)
+            self._append_text(text)
 
     def text(self) -> str:
-        lines = [" ".join(chunk.split()) for chunk in "".join(self.parts).splitlines()]
-        collapsed = "\n".join(line for line in lines if line)
-        return collapsed.strip()
+        for scope in ("article", "main", "body"):
+            lines = [
+                " ".join(chunk.split()) for chunk in "".join(self.parts[scope]).splitlines()
+            ]
+            collapsed = "\n".join(line for line in lines if line)
+            if collapsed.strip():
+                return collapsed.strip()
+        return ""
+
+    def _append_break(self) -> None:
+        for scope, depth in self.capture_depth.items():
+            if depth > 0:
+                self.parts[scope].append("\n")
+
+    def _append_text(self, text: str) -> None:
+        for scope, depth in self.capture_depth.items():
+            if depth > 0:
+                self.parts[scope].append(text)
 
 
 def vendor_root(project: Path) -> Path:
@@ -231,10 +287,21 @@ def snapshot_from_cache(project: Path, item: dict[str, object]) -> Snapshot | No
 def extract_html_text(payload: bytes) -> str:
     parser = HtmlTextExtractor()
     parser.feed(payload.decode("utf-8", errors="ignore"))
+    parser.close()
     text = parser.text()
     if not text:
         raise InstallError("Downloaded page did not contain readable text.")
     return text
+
+
+def adapter_notes_for_host(item: dict[str, object], host: str) -> list[str]:
+    adapter_notes = item.get("adapter_notes")
+    if not isinstance(adapter_notes, dict):
+        return []
+    notes = adapter_notes.get(host)
+    if not isinstance(notes, list):
+        return []
+    return [note for note in notes if isinstance(note, str) and note]
 
 
 def fetch_snapshot(project: Path, item: dict[str, object], offline: bool = False) -> Snapshot:
@@ -366,6 +433,7 @@ def wrapper_frontmatter(item: dict[str, object]) -> str:
 def build_wrapper_skill(
     item: dict[str, object],
     snapshot: Snapshot,
+    adapter_notes: list[str] | None = None,
     extra_lines: list[str] | None = None,
 ) -> str:
     title = f"# {item['name']}\n\n"
@@ -374,8 +442,15 @@ def build_wrapper_skill(
         f"Local cache: {snapshot.cache_dir}",
         "",
     ]
+    if adapter_notes:
+        body.append("## Chef Adapter Notes")
+        body.append("")
+        body.extend(f"- {note}" for note in adapter_notes)
+        body.append("")
     if extra_lines:
-        body.extend(extra_lines)
+        body.append("## Chef Runtime Notes")
+        body.append("")
+        body.extend(f"- {line}" for line in extra_lines)
         body.append("")
 
     imported_text: str | None = None
@@ -419,8 +494,15 @@ def install_skill_like_item(
         target = codex_skill_dir(project, item_id)
     else:
         target = claude_skill_dir(project, item_id)
+        if str(item["kind"]) == "plugin":
+            replace_path(claude_plugin_dir(project, item_id))
     skill_dir = snapshot.material_path and detect_skill_dir(snapshot.material_path, item_id)
-    skill_content = build_wrapper_skill(item, snapshot, extra_lines=extra_lines)
+    skill_content = build_wrapper_skill(
+        item,
+        snapshot,
+        adapter_notes=adapter_notes_for_host(item, host),
+        extra_lines=extra_lines,
+    )
     return replace_and_copy_skill(target, skill_dir, skill_content)
 
 
@@ -438,6 +520,7 @@ def install_claude_plugin_item(
 
     target = claude_plugin_dir(project, item_id)
     actions: list[str] = []
+    replace_path(claude_skill_dir(project, item_id))
     replace_path(target)
     copy_directory(plugin_dir, target)
     actions.append(str(target))
@@ -456,9 +539,6 @@ def ensure_codex_plugin_declares_mcp(project: Path) -> None:
 
 
 def merge_codex_mcp_entries(project: Path, items: list[dict[str, object]]) -> list[str]:
-    if not items:
-        return []
-
     ensure_codex_plugin_declares_mcp(project)
     mcp_path = codex_mcp_path(project)
     existing: dict[str, object] = {"mcpServers": {}}
@@ -469,6 +549,15 @@ def merge_codex_mcp_entries(project: Path, items: list[dict[str, object]]) -> li
     servers = existing.get("mcpServers")
     if not isinstance(servers, dict):
         servers = {}
+
+    managed_mcp_ids = {
+        item_id
+        for item_id, item in read_item_catalog().items()
+        if "codex" in item.get("hosts", []) and str(item.get("kind")) == "mcp_server"
+    }
+    enabled_mcp_ids = {str(item["id"]) for item in items}
+    for item_id in managed_mcp_ids - enabled_mcp_ids:
+        servers.pop(item_id, None)
 
     for item in items:
         mcp = item.get("mcp")

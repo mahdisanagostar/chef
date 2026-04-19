@@ -24,6 +24,8 @@ def install_host_assets(
     errors: list[str] = []
     bundled_items = [item for item in items if item["install"]["method"] == "bundled"]
 
+    host_install.prune_host_items(project, host, items)
+
     if host == "claude":
         installed.extend(host_install.install_claude(project, bundled_items))
     else:

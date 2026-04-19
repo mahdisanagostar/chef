@@ -263,6 +263,9 @@ class ChefCliTests(unittest.TestCase):
             self.assertIn("using-git-worktrees", status["bundled_items"])
             self.assertIn("feature-forge", status["manual_items"])
             self.assertIn("playwright-skill", status["manual_items"])
+            self.assertNotIn("gstack", status["manual_items"])
+            self.assertNotIn("ruflo", status["manual_items"])
+            self.assertNotIn("superpowers", status["manual_items"])
 
     def test_cmd_install_codex_respects_enabled_bundled_skills(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -333,6 +336,39 @@ class ChefCliTests(unittest.TestCase):
             )
             self.assertTrue((project / ".codex" / "skills" / "skill-finder" / "SKILL.md").exists())
             self.assertFalse((project / ".codex" / "skills" / "using-git-worktrees").exists())
+
+    def test_cmd_install_codex_prunes_disabled_managed_skills_only(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project = root / "project"
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
+
+            stale_skill = project / ".codex" / "skills" / "gstack"
+            stale_skill.mkdir(parents=True)
+            (stale_skill / "SKILL.md").write_text("# stale\n", encoding="utf-8")
+            custom_skill = project / ".codex" / "skills" / "custom-skill"
+            custom_skill.mkdir(parents=True)
+            (custom_skill / "SKILL.md").write_text("# custom\n", encoding="utf-8")
+
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex", offline=True
+                )
+
+            self.assertEqual(code, 0)
+            self.assertFalse(stale_skill.exists())
+            self.assertTrue(custom_skill.exists())
+            self.assertTrue((project / ".codex" / "skills" / "chef-index" / "SKILL.md").exists())
 
     def test_install_codex_replaces_existing_skill_copy(self) -> None:
         with TemporaryDirectory() as tmp:

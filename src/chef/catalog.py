@@ -88,6 +88,28 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
                 f"Invalid item catalog entry at {source}: mcp.args must be a list of strings."
             )
 
+    adapter_notes = data.get("adapter_notes")
+    normalized_adapter_notes: dict[str, list[str]] = {}
+    if adapter_notes is not None:
+        if not isinstance(adapter_notes, dict):
+            raise ValueError(
+                f"Invalid item catalog entry at {source}: adapter_notes must be an object."
+            )
+        for host, notes in adapter_notes.items():
+            if host not in ALLOWED_HOSTS:
+                raise ValueError(
+                    f"Invalid item catalog entry at {source}: adapter_notes keys must be "
+                    f"one of {', '.join(sorted(ALLOWED_HOSTS))}."
+                )
+            if not isinstance(notes, list) or any(
+                not isinstance(note, str) or not note for note in notes
+            ):
+                raise ValueError(
+                    f"Invalid item catalog entry at {source}: adapter_notes.{host} must be "
+                    "a list of non-empty strings."
+                )
+            normalized_adapter_notes[host] = list(notes)
+
     return {
         "id": item_id,
         "name": name,
@@ -99,6 +121,7 @@ def normalize_catalog_item(item_id: str, data: object, source: Path) -> dict[str
         },
         **({"source_url": source_url} if isinstance(source_url, str) else {}),
         **({"mcp": {"command": mcp["command"], "args": list(mcp["args"])}} if mcp else {}),
+        **({"adapter_notes": normalized_adapter_notes} if normalized_adapter_notes else {}),
         "always_installed": always_installed,
     }
 

@@ -62,6 +62,7 @@ Pack-aware install behavior:
 - Codex registers built-in `chef-knowledge-mcp` and also merges MCP-capable catalog items into project-local `.codex-plugin/.mcp.json`
 - `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
 - always-on Chef routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` install even when no optional packs are enabled
+- heavyweight orchestration frameworks stay in the optional `orchestration` pack so default installs avoid overlapping agent frameworks
 
 Enable and install more packs later:
 
@@ -71,6 +72,7 @@ chef pack-enable --project . --pack ux --pack media --offline
 
 `chef pack-enable` now writes enabled-pack state and installs pack assets for the project host in one step.
 The `media` pack includes `talkcraft` for presentation strategy and rehearsal support.
+The `orchestration` pack groups `gstack`, `massgen`, `ruflo`, and `superpowers`.
 
 Local wrapper without editable install:
 
@@ -103,6 +105,9 @@ Manifest format and validation live in
 
 Catalog details live in
 [docs/catalog-schema.md](catalog-schema.md)
+
+Skill overlap and Codex adaptation decisions live in
+[docs/skill-audit.md](skill-audit.md)
 
 ## Tests
 
