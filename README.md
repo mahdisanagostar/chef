@@ -1,108 +1,137 @@
 # Chef
 
-Chef provides one modular enhancement package for Claude and Codex.
+[![CI](https://github.com/mahdisanagostar/chef/actions/workflows/ci.yml/badge.svg)](https://github.com/mahdisanagostar/chef/actions/workflows/ci.yml)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Hosts Claude + Codex](https://img.shields.io/badge/hosts-Claude%20%2B%20Codex-111827)
+![MCP Ready](https://img.shields.io/badge/MCP-ready-0F766E)
+![Obsidian Vault](https://img.shields.io/badge/knowledge-Obsidian%20vault-7C3AED)
+![License MIT](https://img.shields.io/badge/license-MIT-059669)
 
-## Goals
+Chef turns a repository into a project-local runtime for Claude and Codex. It installs the right skills into the repo, keeps an Obsidian-compatible knowledge vault nearby, wires MCP servers where they belong, and records install truth so the setup stays inspectable instead of becoming personal machine state.
 
-- One repository.
-- Two host installs.
-- Shared graph-first policy.
-- Structured Obsidian knowledge base.
-- Native host routing.
-- Optional domain packs.
-- Isolated orchestration frameworks.
-- Built-in MCP servers.
-- One capability catalog for pack resolution.
+## About
 
-## Quick Start
+Chef exists for teams that want agent behavior to live with the project, not inside one developer's laptop setup. A fresh clone can be turned into a shared Claude and Codex workspace with the same routing rules, the same enabled packs, the same MCP layout, and the same graph-first knowledge workflow.
 
-```bash
-cd chef
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-pip install -e '.[graph]'
-chef init --project . --host both --vault new
-chef install --host both --project . --offline
-chef verify --project .
+```mermaid
+flowchart LR
+    A["Repository"] --> B["chef init"]
+    B --> C["knowledge-vault/"]
+    A --> D["chef install"]
+    D --> E[".claude/"]
+    D --> F[".codex/"]
+    D --> G[".codex-plugin/"]
+    D --> H[".chef/install-state.json"]
 ```
 
-`graphifyy` installs the `graphify` CLI used by `chef graph-refresh`.
+## What Chef Handles
 
-## Host Install
+| Label | What it does in practice |
+| --- | --- |
+| `Hosts` | Installs project-local runtime assets for Claude, Codex, or both. |
+| `Knowledge` | Creates and maintains an Obsidian-compatible vault with graph-first retrieval. |
+| `Packs` | Turns groups of skills and MCP-capable integrations on or off without hand-editing runtime folders. |
+| `MCP` | Registers built-in knowledge, review, and security MCP servers where the active host expects them. |
+| `Verification` | Records install fidelity in `.chef/install-state.json` and checks the repo state with `chef verify`. |
 
-Claude:
+## Prerequisites
+
+Before installing Chef, make sure the machine has:
+
+- `Python 3.11+`
+- `git`
+- `pip`
+- `Node.js 18+` and `npx` for browser tooling and some MCP-connected workflows
+- `gh` only if you want GitHub publishing and PR flows
+
+If you want local graph refresh, install the optional graph extra. Chef uses `graphify` through the `graphifyy` package.
+
+## Install
+
+### macOS and Linux
 
 ```bash
-chef install --host claude --project .
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e . && pip install -e '.[graph]'
+chef init --project . --host both --vault new && chef install --project . --host both --offline && chef verify --project .
 ```
 
-Codex:
+### Windows PowerShell
 
-```bash
-chef install --host codex --project .
+```powershell
+py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -e .; pip install -e ".[graph]"
+chef init --project . --host both --vault new; chef install --project . --host both --offline; chef verify --project .
 ```
 
-Both:
+If you only need one host, replace `--host both` with `--host claude` or `--host codex`.
 
-```bash
-chef install --host both --project .
-```
+## First Run
 
-`chef install` now syncs enabled packs:
+After the initial install, Chef keeps the repo readable:
 
-- bundled Chef assets install into project-local host runtime under `.claude/`, `.codex/`, and `.codex-plugin/`
-- external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
-- install truth now persists in `.chef/install-state.json`
-- `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
-- Codex writes built-in knowledge MCP plus pack-aware review and security MCP entries into project-local `.codex-plugin/.mcp.json`
-- baseline routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` stay installed as always-on Chef defaults
-- heavy orchestration frameworks stay out of `core` and live in the optional `orchestration` pack
+- `chef init` writes the project manifest and vault layout.
+- `chef install` syncs bundled skills, enabled packs, external skill sources, and host-specific MCP config.
+- `chef verify` checks policy files, runtime folders, MCP declarations, and install-state records.
 
-Enable more packs after initial install:
+For a typical team workflow, the next commands usually look like this:
 
 ```bash
 chef pack-enable --project . --pack media --offline
 chef pack-profile --project . --profile full --offline
-chef pack-status --project . --json
+chef graph-refresh --project . --execute
 ```
 
-`chef pack-enable` now updates enabled state and installs pack assets for the project host immediately.
-The `media` pack includes `talkcraft` for high-stakes TalkCraft planning.
+## What Appears in the Repo
 
-Local development wrapper:
+| Path | Purpose |
+| --- | --- |
+| `.claude/` | Project-local Claude runtime, skills, and commands. |
+| `.codex/` | Project-local Codex runtime, shared skills, and routing helpers. |
+| `.codex-plugin/` | Codex plugin payload plus generated MCP registration. |
+| `.chef/` | Manifest, enabled packs, vendor cache, and install-state truth. |
+| `knowledge-vault/` | Obsidian-compatible vault used for notes, graph output, and retrieval. |
+
+## Why This Structure Works
+
+Chef keeps two important promises.
+
+First, the runtime stays inside the repository. That makes onboarding faster and drift easier to spot, because the active agent setup travels with the project.
+
+Second, the setup stays modular. The `core` pack keeps the default install lean, while optional packs add media, UX, review, security, or orchestration layers only when the repository actually needs them.
+
+## Common Commands
 
 ```bash
-./bin/chef --help
+chef install --project . --host both --offline
+chef pack-status --project .
+chef verify --project .
+chef graph-refresh --project . --execute
 ```
 
-## Tests
+Use `./bin/chef --help` if you want the local wrapper without relying on an editable install.
 
-```bash
-python -m unittest discover -s tests -v
-chef verify --project . --json
-```
+## Documentation
 
-## Core Rules
+When you need one level deeper, start here:
 
-- Query graph before raw source.
-- Treat `chef/knowledge-vault/Graphify/graphify-out/wiki/index.md` as authoritative codebase index.
-- Keep repo-root `graphify-out/` as compatibility symlink into vault-owned graph output.
-- Keep generated runtime state inside project boundaries.
-- Allow raw file reads only when user explicitly asks.
-- Use native host expert routing, not cross-vendor routing.
-- Codex uses Fast Path by default and escalates hard work to a hidden Expert Path helper.
+- [Install Guide](docs/install.md)
+- [Architecture](docs/architecture.md)
+- [Catalog Schema](docs/catalog-schema.md)
+- [Manifest Schema](docs/manifest-schema.md)
+- [Skill Audit](docs/skill-audit.md)
+- [Tool Matrix](docs/tool-matrix.md)
 
-## Key Paths
+## References
 
-- [docs/architecture.md](docs/architecture.md)
-- [docs/catalog-schema.md](docs/catalog-schema.md)
-- [docs/install.md](docs/install.md)
-- [docs/skill-audit.md](docs/skill-audit.md)
-- [docs/manifest-schema.md](docs/manifest-schema.md)
-- [docs/publish.md](docs/publish.md)
-- [docs/tool-matrix.md](docs/tool-matrix.md)
-- [catalog/items.json](catalog/items.json)
-- [knowledge-vault/Home/Home.md](knowledge-vault/Home/Home.md)
-- [knowledge-vault/Graphify/index.md](knowledge-vault/Graphify/index.md)
-- [mcp/chef-knowledge-mcp/README.md](mcp/chef-knowledge-mcp/README.md)
+- [Anthropic: Claude Code overview](https://docs.anthropic.com/en/docs/claude-code/overview)  
+  Useful for understanding the Claude-side host model that Chef installs into the repository.
+
+- [OpenAI: Codex cloud](https://platform.openai.com/docs/codex)  
+  Useful for understanding the Codex-side coding-agent workflow that Chef supports and extends locally.
+
+- [Model Context Protocol: What is MCP?](https://modelcontextprotocol.io/introduction)  
+  Useful for understanding the protocol behind Chef's MCP server wiring and host integration model.
+
+- [Obsidian Help: How Obsidian stores data](https://help.obsidian.md/data-storage)  
+  Useful for understanding why Chef keeps its knowledge base in a plain-text vault structure inside the repo.
