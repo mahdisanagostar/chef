@@ -1025,8 +1025,6 @@ def verify_external_items_report(
                 checks[f"item:{item_id}"] = claude_skill_dir(project, item_id).exists()
         if not state:
             continue
-        if bool(state.get("degraded")):
-            checks[f"item:{item_id}"] = False
         record_warnings = state.get("warnings")
         if isinstance(record_warnings, list):
             warnings.extend(

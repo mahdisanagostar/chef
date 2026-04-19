@@ -1,7 +1,7 @@
 # Graph Report - /Users/mahdi/Desktop/git/chef  (2026-04-19)
 
 ## Corpus Check
-- 29 files · ~37,642 words
+- 29 files · ~37,637 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
