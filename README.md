@@ -54,6 +54,7 @@ chef install --host both --project .
 - external skills and plugin sources cache under `.chef/vendor/` and sync into project-local targets
 - `--offline` reuses cached snapshots or writes managed wrapper fallbacks without network access
 - Codex writes built-in `chef-knowledge-mcp` plus catalog MCP entries into project-local `.codex-plugin/.mcp.json`
+- baseline routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` stay installed as always-on Chef defaults
 
 Enable more packs after initial install:
 

@@ -84,6 +84,15 @@ class ChefCliTests(unittest.TestCase):
                 '{"enabled":[]}\n', encoding="utf-8"
             )
             policy_ops.sync_project_policies(project, "claude")
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="claude", offline=False
+                )
+            self.assertEqual(code, 0)
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -132,6 +141,15 @@ class ChefCliTests(unittest.TestCase):
                 '{"enabled":[]}\n', encoding="utf-8"
             )
             policy_ops.sync_project_policies(project, "claude")
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="claude", offline=False
+                )
+            self.assertEqual(code, 0)
             code, _, _ = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 0)
 
@@ -313,7 +331,7 @@ class ChefCliTests(unittest.TestCase):
             self.assertTrue(
                 (project / ".codex" / "skills" / "graph-first-retrieval" / "SKILL.md").exists()
             )
-            self.assertFalse((project / ".codex" / "skills" / "skill-finder").exists())
+            self.assertTrue((project / ".codex" / "skills" / "skill-finder" / "SKILL.md").exists())
             self.assertFalse((project / ".codex" / "skills" / "using-git-worktrees").exists())
 
     def test_install_codex_replaces_existing_skill_copy(self) -> None:

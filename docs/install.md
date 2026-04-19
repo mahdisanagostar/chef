@@ -61,6 +61,7 @@ Pack-aware install behavior:
 - external skill pages and GitHub sources cache under `.chef/vendor/` and sync into project-local targets
 - Codex registers built-in `chef-knowledge-mcp` and also merges MCP-capable catalog items into project-local `.codex-plugin/.mcp.json`
 - `chef install --offline` avoids network access and reuses cache or writes wrapper fallbacks
+- always-on Chef routing skills such as `chef-index`, `graph-first-retrieval`, and `skill-finder` install even when no optional packs are enabled
 
 Enable and install more packs later:
 

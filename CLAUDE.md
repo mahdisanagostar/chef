@@ -27,6 +27,7 @@ Chef manages this file as the project policy and central runtime index for Claud
 - Project runtime root: `.claude/commands/chef`
 - Project skill root: `.claude/skills`
 - Project plugin root: `.claude/plugins/local`
+- Always use `skill-finder` before choosing specialist skills for substantial work.
 - Chef commands for this project:
 - `/chef-graph-refresh`
 - `/chef-pack-status`
@@ -61,6 +62,7 @@ Chef manages this file as the project policy and central runtime index for Claud
 - `secure-code-guardian`
 - `security-guidance`
 - `skill-creator`
+- `skill-finder`
 - `spec-miner`
 - `superpowers`
 - `talkcraft`

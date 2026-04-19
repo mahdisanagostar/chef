@@ -1,12 +1,12 @@
 # Graph Report - /Users/mahdi/Desktop/git/chef  (2026-04-19)
 
 ## Corpus Check
-- 25 files · ~29,340 words
+- 28 files · ~31,473 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 258 nodes · 614 edges · 16 communities detected
-- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 190 edges (avg confidence: 0.8)
+- 267 nodes · 644 edges · 16 communities detected
+- Extraction: 70% EXTRACTED · 30% INFERRED · 0% AMBIGUOUS · INFERRED: 196 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -28,7 +28,7 @@
 - [[_COMMUNITY_Community 15|Community 15]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `read_text()` - 40 edges
+1. `read_text()` - 41 edges
 2. `ChefCliTests` - 24 edges
 3. `run_command()` - 16 edges
 4. `sync_external_items()` - 16 edges
@@ -37,7 +37,7 @@
 7. `vault_dir()` - 13 edges
 8. `cmd_graph_refresh()` - 12 edges
 9. `list_backlinks()` - 12 edges
-10. `read_pack_registry()` - 10 edges
+10. `resolve_enabled_items()` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `read_item_catalog()` --calls--> `read_text()`  [INFERRED]
@@ -74,23 +74,23 @@ Cohesion: 0.21
 Nodes (19): normalize_catalog_item(), read_item_catalog(), build_parser(), cmd_init(), cmd_install(), cmd_pack_enable(), cmd_pack_status(), cmd_publish_github() (+11 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.21
+Cohesion: 0.22
 Nodes (4): read_text(), SyncResult, ChefCliTests, run_command()
 
 ### Community 6 - "Community 6"
+Cohesion: 0.21
+Nodes (13): build_policy_checks(), _claude_commands(), _enabled_skill_items(), _format_list(), _graphify_codex_section(), _load_manifest(), _project_path_value(), render_claude_policy() (+5 more)
+
+### Community 7 - "Community 7"
 Cohesion: 0.25
 Nodes (14): build_report(), Check, detect_concreteness(), detect_transitions(), extract_fence_sections(), FenceSection, Heading, main() (+6 more)
 
-### Community 7 - "Community 7"
-Cohesion: 0.39
-Nodes (11): build_policy_checks(), _claude_commands(), _enabled_skill_items(), _format_list(), _graphify_codex_section(), _load_manifest(), _project_path_value(), render_claude_policy() (+3 more)
-
 ### Community 8 - "Community 8"
-Cohesion: 0.44
+Cohesion: 0.53
 Nodes (8): choose_runtime(), find_validator(), main(), repo_root(), runtime_candidates(), skill_root(), supports_yaml(), validator_candidates()
 
 ### Community 9 - "Community 9"
-Cohesion: 0.5
+Cohesion: 0.58
 Nodes (8): compare_dirs(), default_mirror(), iter_files(), main(), relative_file_map(), repo_root(), skill_root(), sync_dirs()
 
 ### Community 10 - "Community 10"
@@ -132,14 +132,14 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `read_text()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 7`, `Community 10`?**
-  _High betweenness centrality (0.405) - this node is a cross-community bridge._
+- **Why does `read_text()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 6`, `Community 10`?**
+  _High betweenness centrality (0.404) - this node is a cross-community bridge._
 - **Why does `cmd_graph_refresh()` connect `Community 2` to `Community 4`, `Community 5`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
 - **Why does `ChefCliTests` connect `Community 5` to `Community 2`, `Community 3`, `Community 4`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Are the 38 inferred relationships involving `read_text()` (e.g. with `.test_quick_validate_uses_override_validator()` and `.test_sync_external_installs_codex_wrapper_skill()`) actually correct?**
-  _`read_text()` has 38 INFERRED edges - model-reasoned connections that need verification._
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
+- **Are the 39 inferred relationships involving `read_text()` (e.g. with `.test_quick_validate_uses_override_validator()` and `.test_quick_validate_uses_override_validator()`) actually correct?**
+  _`read_text()` has 39 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 8 inferred relationships involving `sync_external_items()` (e.g. with `.test_sync_external_installs_codex_wrapper_skill()` and `.test_sync_external_installs_claude_plugin_when_detected()`) actually correct?**
   _`sync_external_items()` has 8 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 13 inferred relationships involving `manifest_warning()` (e.g. with `.test_external_vault_resolution_and_warnings()` and `.test_invalid_manifest_warning_falls_back_to_default_vault()`) actually correct?**

@@ -256,9 +256,10 @@
   },
   "skill-finder": {
     "name": "Skill Finder",
-    "kind": "codex_skill",
-    "hosts": ["codex"],
-    "install": {"method": "bundled", "path": "adapters/codex/skills/skill-finder"}
+    "kind": "skill",
+    "hosts": ["claude", "codex"],
+    "install": {"method": "bundled", "path": "adapters/shared/skills/skill-finder"},
+    "always_installed": true
   },
   "spec-miner": {
     "name": "Spec Miner",
