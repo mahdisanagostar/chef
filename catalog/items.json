@@ -183,7 +183,7 @@
     "source_url": "https://github.com/agamm/claude-code-owasp/blob/main/.claude/skills/owasp-security/SKILL.md"
   },
   "talkcraft": {
-    "name": "Talkcraft",
+    "name": "TalkCraft",
     "kind": "skill",
     "hosts": ["claude", "codex"],
     "install": {

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import filecmp
+import os
 import shutil
 from pathlib import Path
 
@@ -11,6 +12,35 @@ IGNORED_NAMES = {"__pycache__", ".DS_Store"}
 
 def skill_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def repo_root() -> Path:
+    root = skill_root()
+    if (
+        root.parent.name == "skills"
+        and root.parent.parent.name == "shared"
+        and root.parent.parent.parent.name == "adapters"
+    ):
+        return root.parent.parent.parent.parent
+    return root.parent
+
+
+def default_mirror() -> Path | None:
+    override = os.environ.get("TALKCRAFT_MIRROR")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    repository = repo_root()
+    source = skill_root()
+
+    standalone_candidate = repository.parent / "talkcraft" / "talkcraft"
+    chef_candidate = repository.parent / "chef" / "adapters" / "shared" / "skills" / "talkcraft"
+
+    if source.parent == repository and chef_candidate.exists():
+        return chef_candidate.resolve()
+    if standalone_candidate.exists():
+        return standalone_candidate.resolve()
+    return None
 
 
 def iter_files(root: Path) -> list[Path]:
@@ -63,9 +93,16 @@ def sync_dirs(source: Path, target: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Check or sync a Talkcraft mirror directory.",
+        description="Check or sync a TalkCraft mirror directory.",
     )
-    parser.add_argument("mirror", help="Mirror skill directory path")
+    parser.add_argument(
+        "mirror",
+        nargs="?",
+        help=(
+            "Mirror skill directory path. Defaults to TALKCRAFT_MIRROR "
+            "or a sibling Chef/TalkCraft checkout."
+        ),
+    )
     parser.add_argument(
         "--mode",
         choices=("check", "sync"),
@@ -75,7 +112,15 @@ def main() -> None:
     args = parser.parse_args()
 
     source = skill_root()
-    mirror = Path(args.mirror).expanduser().resolve()
+    mirror = (
+        Path(args.mirror).expanduser().resolve()
+        if args.mirror
+        else default_mirror()
+    )
+    if mirror is None:
+        raise SystemExit(
+            "mirror path required; pass one explicitly or set TALKCRAFT_MIRROR",
+        )
 
     if args.mode == "sync":
         sync_dirs(source, mirror)

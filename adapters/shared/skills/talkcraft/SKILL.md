@@ -5,7 +5,7 @@ metadata:
   tags: presentation, speaking, slides, rhetoric, coaching
 ---
 
-# Talkcraft
+# TalkCraft
 
 ## Overview
 

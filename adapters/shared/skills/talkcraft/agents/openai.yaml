@@ -1,5 +1,5 @@
 interface:
-  display_name: "Talkcraft"
+  display_name: "TalkCraft"
   short_description: "Plan and sharpen high-stakes presentations"
   default_prompt: "Use $talkcraft to design or improve this presentation with Winston-style structure, delivery, and rehearsal discipline."
 

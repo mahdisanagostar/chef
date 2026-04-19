@@ -337,7 +337,7 @@ def render_markdown(report: dict[str, object]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Audit a presentation outline against the Talkcraft rubric.",
+        description="Audit a presentation outline against the TalkCraft rubric.",
     )
     parser.add_argument("outline", help="Path to a markdown or text outline")
     parser.add_argument(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -11,9 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = ROOT / "adapters" / "shared" / "skills" / "talkcraft"
 AUDIT_SCRIPT = SKILL_DIR / "scripts" / "audit_outline.py"
 SYNC_SCRIPT = SKILL_DIR / "scripts" / "sync_mirror.py"
+VALIDATE_SCRIPT = SKILL_DIR / "scripts" / "quick_validate.py"
 
 
-class TalkcraftTests(unittest.TestCase):
+class TalkCraftTests(unittest.TestCase):
     def test_audit_outline_reports_fence_details(self) -> None:
         outline = """
 # Demo Talk
@@ -110,6 +112,59 @@ class TalkcraftTests(unittest.TestCase):
                 check=True,
             )
             self.assertIn("in sync", recheck_result.stdout)
+
+    def test_sync_mirror_uses_env_override(self) -> None:
+        with TemporaryDirectory() as tmp:
+            mirror = Path(tmp) / "mirror"
+            mirror.mkdir()
+            env = dict(os.environ, TALKCRAFT_MIRROR=str(mirror))
+
+            sync_result = subprocess.run(
+                [sys.executable, str(SYNC_SCRIPT), "--mode", "sync"],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=env,
+            )
+            self.assertIn("synced:", sync_result.stdout)
+
+            check_result = subprocess.run(
+                [sys.executable, str(SYNC_SCRIPT), "--mode", "check"],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=env,
+            )
+            self.assertIn("in sync", check_result.stdout)
+
+    def test_quick_validate_uses_override_validator(self) -> None:
+        with TemporaryDirectory() as tmp:
+            validator = Path(tmp) / "validator.py"
+            output = Path(tmp) / "args.json"
+            validator.write_text(
+                "import json\n"
+                "import pathlib\n"
+                "import sys\n"
+                "pathlib.Path(sys.argv[2]).write_text(json.dumps(sys.argv[1:]))\n",
+                encoding="utf-8",
+            )
+            env = dict(
+                os.environ,
+                TALKCRAFT_QUICK_VALIDATE=str(validator),
+                PYTHONDONTWRITEBYTECODE="1",
+            )
+
+            subprocess.run(
+                [sys.executable, str(VALIDATE_SCRIPT), str(output)],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=env,
+            )
+
+            argv = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(argv[0], str(SKILL_DIR))
+            self.assertEqual(argv[1], str(output))
 
 
 if __name__ == "__main__":

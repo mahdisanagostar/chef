@@ -62,7 +62,7 @@ chef pack-enable --project . --pack media --offline
 ```
 
 `chef pack-enable` now updates enabled state and installs pack assets for the project host immediately.
-The `media` pack includes `talkcraft` for high-stakes talk and deck planning.
+The `media` pack includes `talkcraft` for high-stakes TalkCraft planning.
 
 Local development wrapper:
 
