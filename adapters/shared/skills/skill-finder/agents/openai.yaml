@@ -1,7 +1,7 @@
 interface:
   display_name: "Skill Finder"
   short_description: "Route any Chef task to the best specialist skills"
-  default_prompt: "Use $skill-finder to choose and sequence the best Chef skills for this task before acting."
+  default_prompt: "Use $skill-finder to choose the smallest useful skill set for this task before acting, honoring explicit requests and preferring host-native specialists when available."
 
 policy:
   allow_implicit_invocation: true

@@ -78,6 +78,36 @@ class SkillFinderTests(unittest.TestCase):
                 claude_policy,
             )
 
+    def test_skill_finder_docs_cover_host_native_routes_and_fast_path(self) -> None:
+        skill_doc = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        matrix = (SKILL_DIR / "references" / "selection-matrix.md").read_text(
+            encoding="utf-8"
+        )
+        rules = (SKILL_DIR / "references" / "routing-rules.md").read_text(
+            encoding="utf-8"
+        )
+        agent_prompt = (SKILL_DIR / "agents" / "openai.yaml").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "Do not force routing when the task is already small and obvious.",
+            skill_doc,
+        )
+        self.assertIn(
+            "Prefer host-native specialists before generic overlap",
+            skill_doc,
+        )
+        self.assertIn("editable `.pptx` deck -> `slides`", matrix)
+        self.assertIn("OpenAI product or API guidance -> `openai-docs`", matrix)
+        self.assertIn("GitHub Actions CI failure -> `github:gh-fix-ci`", matrix)
+        self.assertIn(
+            "Slack outbound message or draft -> `slack:slack-outgoing-message`",
+            matrix,
+        )
+        self.assertIn("iOS simulator run or debug -> `build-ios-apps:ios-debugger-agent`", matrix)
+        self.assertIn("Do not pick both items from same overlap pair", rules)
+        self.assertIn("skip routing for trivial tasks", rules)
+        self.assertIn("preferring host-native specialists", agent_prompt)
+
     def test_sync_mirror_uses_env_override(self) -> None:
         with TemporaryDirectory() as tmp:
             mirror = Path(tmp) / "mirror"
@@ -130,6 +160,19 @@ class SkillFinderTests(unittest.TestCase):
             argv = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(argv[0], str(SKILL_DIR))
             self.assertEqual(argv[1], str(output))
+
+    def test_sync_mirror_matches_sibling_repo_when_present(self) -> None:
+        sibling = ROOT.parent / "skill-finder" / "skill-finder"
+        if not sibling.exists():
+            self.skipTest("sibling skill-finder repo not present")
+
+        result = subprocess.run(
+            [sys.executable, str(SYNC_SCRIPT), str(sibling), "--mode", "check"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertIn("in sync", result.stdout)
 
 
 if __name__ == "__main__":

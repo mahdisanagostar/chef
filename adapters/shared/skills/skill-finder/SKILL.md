@@ -17,21 +17,32 @@ Run it:
 
 The goal is not to list every possible skill. The goal is to engage the fewest skills that materially improve the work.
 
+## Fast Path
+
+Do not force routing when the task is already small and obvious.
+
+Skip specialist selection when:
+
+- the user asks for a trivial shell action or one-command lookup
+- the user names one exact skill or plugin route and no support changes execution
+- the current step is a tiny follow-up inside an already-correct skill lane
+
 ## Default Behavior
 
 For every non-trivial task:
 
-1. classify the task
-2. pick one primary skill
-3. add at most two supporting skills
-4. explain the choice in one short line
-5. re-run the check if scope shifts
+1. honor explicit skill, plugin, or app requests first
+2. classify the task
+3. pick one primary skill
+4. add at most one execution support and one verification support
+5. explain the choice in one short line
+6. re-run the check if scope shifts
 
 If no specialist skill clearly helps, say so and continue without forcing one.
 
 ## Classification Pass
 
-Look at five things first:
+Look at seven things first:
 
 1. `intent`
    build, review, debug, research, document, design, present, automate
@@ -43,6 +54,10 @@ Look at five things first:
    terminal, browser, slides, images, docs, video
 5. `freshness`
    whether direct graph read, live browsing, or current repo state matters
+6. `host`
+   Codex runtime, Codex plugin, shared Chef skill, Claude skill
+7. `explicit cues`
+   user-named skills, plugins, tools, output formats, or platforms
 
 Use the matrix in `references/selection-matrix.md` when the answer is not obvious.
 
@@ -50,7 +65,7 @@ Use the matrix in `references/selection-matrix.md` when the answer is not obviou
 
 ### 1. Prefer one strong specialist
 
-Pick the narrowest skill that squarely matches the task.
+Pick narrowest skill that squarely matches task.
 
 Good:
 
@@ -62,7 +77,29 @@ Bad:
 
 - frontend request -> `frontend-design`, `design-sprint`, `ux-heuristics`, `refactoring-ui`
 
-### 2. Add support only when it changes execution
+### 2. Explicit request wins
+
+If user names skill, plugin, or tool surface, start there unless it clearly conflicts with task.
+
+Examples:
+
+- asks for GitHub PR triage -> `github:github`
+- asks for Notion capture -> `notion:notion-knowledge-capture`
+- asks for PowerPoint deck -> `slides`
+- asks for OpenAI API guidance -> `openai-docs`
+
+### 3. Prefer host-native specialists before generic overlap
+
+When current host has a stronger native route, prefer it over a broader fallback.
+
+Examples:
+
+- editable `.pptx` build -> `slides`, not only `talkcraft`
+- spreadsheet file work -> `spreadsheet` or `Excel`, not `excel-mcp-server`
+- GitHub Actions CI fix -> `github:gh-fix-ci`, not generic review flow
+- Slack send or draft -> `slack:slack-outgoing-message`, not plain messaging advice
+
+### 4. Add support only when it changes execution
 
 Supporting skills should change how the work happens, not just sound relevant.
 
@@ -72,8 +109,31 @@ Common support patterns:
 - code change + review risk -> `code-reviewer`
 - code change + security concern -> `secure-code-guardian`
 - codebase question + repo context -> `graph-first-retrieval`
+- deck build + weak narrative -> `talkcraft`
+- editable artifact + final verification need -> medium-specific verification skill
 
-### 3. Respect stage changes
+Treat support lanes as:
+
+- `execution support`
+  worktree, graph retrieval, implementation workflow
+- `verification support`
+  code review, security review, browser verification
+
+Do not add two supports from same lane unless user explicitly asks.
+
+### 5. Avoid overlap twins
+
+Never choose two skills that solve same layer of problem unless user explicitly asks for both.
+
+Common overlaps:
+
+- `slides` and `PowerPoint`
+- `spreadsheet` and `Excel`
+- `playwright` and `playwright-skill`
+- `frontend-design` and `build-web-apps:frontend-skill`
+- `code-reviewer` and `github:gh-address-comments`
+
+### 6. Respect stage changes
 
 Re-route when the task moves from one stage to another.
 
@@ -84,13 +144,14 @@ Examples:
 - notes -> deck strategy: switch to `talkcraft`
 - static design -> interactive artifact: switch to `web-artifacts-builder`
 
-### 4. Respect host and project reality
+### 7. Respect host and project reality
 
 - prefer enabled Chef skills listed in `AGENTS.md` or `CLAUDE.md`
+- prefer Codex runtime or plugin skills when current host exposes them
 - prefer bundled local skills over hypothetical ones
 - do not route to unavailable skills
 
-### 5. Keep the set small
+### 8. Keep the set small
 
 Hard cap:
 
@@ -104,6 +165,10 @@ If you want more than three, the routing pass failed.
 When routing matters, announce the decision briefly:
 
 `Using $skill-finder: primary = $frontend-design; support = $using-git-worktrees because this is a UI build with implementation work.`
+
+`Using $skill-finder: primary = $slides; support = $talkcraft because user needs an editable deck and stronger story structure.`
+
+`Using $skill-finder: no specialist added because this is a trivial shell task.`
 
 For Claude-host work, use the same pattern without `$` if needed.
 

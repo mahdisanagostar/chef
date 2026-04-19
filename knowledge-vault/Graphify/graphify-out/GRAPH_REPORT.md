@@ -1,12 +1,12 @@
 # Graph Report - /Users/mahdi/Desktop/git/chef  (2026-04-19)
 
 ## Corpus Check
-- 28 files · ~31,473 words
+- 28 files · ~32,409 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 267 nodes · 644 edges · 16 communities detected
-- Extraction: 70% EXTRACTED · 30% INFERRED · 0% AMBIGUOUS · INFERRED: 196 edges (avg confidence: 0.8)
+- 269 nodes · 647 edges · 16 communities detected
+- Extraction: 70% EXTRACTED · 30% INFERRED · 0% AMBIGUOUS · INFERRED: 197 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -28,7 +28,7 @@
 - [[_COMMUNITY_Community 15|Community 15]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `read_text()` - 41 edges
+1. `read_text()` - 42 edges
 2. `ChefCliTests` - 24 edges
 3. `run_command()` - 16 edges
 4. `sync_external_items()` - 16 edges
@@ -54,32 +54,32 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.09
-Nodes (35): Exception, build_wrapper_skill(), codex_mcp_path(), codex_plugin_path(), copy_directory(), detect_claude_plugin_dir(), detect_skill_dir(), download_repo_zip() (+27 more)
-
-### Community 1 - "Community 1"
 Cohesion: 0.11
 Nodes (32): graph_dir(), graph_index_path(), graph_report_path(), is_vault_note(), manifest_warning(), note_identifier(), note_rel_path(), resolve_note_path() (+24 more)
+
+### Community 1 - "Community 1"
+Cohesion: 0.1
+Nodes (30): Exception, build_wrapper_skill(), copy_directory(), detect_claude_plugin_dir(), detect_skill_dir(), download_repo_zip(), ensure_clean_cache(), extract_html_text() (+22 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.11
 Nodes (30): cmd_graph_refresh(), detect_agent_host(), graph_json_path(), graph_report_file(), graph_status(), _ignored_graph_path(), iter_graph_inputs(), refresh_graph_if_stale() (+22 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.17
-Nodes (20): verify_external_items(), codex_builtin_mcp_servers(), copy_asset(), ensure_codex_builtin_mcp(), install_bundled_skills(), install_claude(), install_codex(), replace_path() (+12 more)
+Cohesion: 0.13
+Nodes (25): codex_mcp_path(), codex_plugin_path(), ensure_codex_plugin_declares_mcp(), merge_codex_mcp_entries(), verify_external_items(), codex_builtin_mcp_servers(), copy_asset(), ensure_codex_builtin_mcp() (+17 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.21
 Nodes (19): normalize_catalog_item(), read_item_catalog(), build_parser(), cmd_init(), cmd_install(), cmd_pack_enable(), cmd_pack_status(), cmd_publish_github() (+11 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.22
-Nodes (4): read_text(), SyncResult, ChefCliTests, run_command()
+Cohesion: 0.18
+Nodes (13): build_policy_checks(), _claude_commands(), _enabled_skill_items(), _format_list(), _graphify_codex_section(), _load_manifest(), _project_path_value(), render_claude_policy() (+5 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.21
-Nodes (13): build_policy_checks(), _claude_commands(), _enabled_skill_items(), _format_list(), _graphify_codex_section(), _load_manifest(), _project_path_value(), render_claude_policy() (+5 more)
+Cohesion: 0.22
+Nodes (4): read_text(), SyncResult, ChefCliTests, run_command()
 
 ### Community 7 - "Community 7"
 Cohesion: 0.25
@@ -132,14 +132,14 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `read_text()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 6`, `Community 10`?**
-  _High betweenness centrality (0.404) - this node is a cross-community bridge._
-- **Why does `cmd_graph_refresh()` connect `Community 2` to `Community 4`, `Community 5`?**
+- **Why does `read_text()` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 10`?**
+  _High betweenness centrality (0.410) - this node is a cross-community bridge._
+- **Why does `cmd_graph_refresh()` connect `Community 2` to `Community 4`, `Community 6`?**
   _High betweenness centrality (0.072) - this node is a cross-community bridge._
-- **Why does `ChefCliTests` connect `Community 5` to `Community 2`, `Community 3`, `Community 4`?**
-  _High betweenness centrality (0.061) - this node is a cross-community bridge._
-- **Are the 39 inferred relationships involving `read_text()` (e.g. with `.test_quick_validate_uses_override_validator()` and `.test_quick_validate_uses_override_validator()`) actually correct?**
-  _`read_text()` has 39 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `ChefCliTests` connect `Community 6` to `Community 2`, `Community 3`, `Community 4`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Are the 40 inferred relationships involving `read_text()` (e.g. with `.test_quick_validate_uses_override_validator()` and `.test_skill_finder_docs_cover_host_native_routes_and_fast_path()`) actually correct?**
+  _`read_text()` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 8 inferred relationships involving `sync_external_items()` (e.g. with `.test_sync_external_installs_codex_wrapper_skill()` and `.test_sync_external_installs_claude_plugin_when_detected()`) actually correct?**
   _`sync_external_items()` has 8 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 13 inferred relationships involving `manifest_warning()` (e.g. with `.test_external_vault_resolution_and_warnings()` and `.test_invalid_manifest_warning_falls_back_to_default_vault()`) actually correct?**
