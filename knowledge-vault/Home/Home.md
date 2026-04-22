@@ -1,4 +1,2 @@
-# Home
-
 - Open `../Memory/Memory.md`
 - Open `../Graphify/index.md`
