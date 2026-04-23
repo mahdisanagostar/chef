@@ -476,7 +476,9 @@ def cmd_git_privacy_status(args: argparse.Namespace) -> int:
     print(f"- hooks path: {status['hooks_path']}")
     print(f"- author name: {status['author_name'] or 'none'}")
     print(f"- author email: {status['author_email'] or 'none'}")
-    print(f"- blocked terms: {', '.join(status['blocked_terms']) if status['blocked_terms'] else 'none'}")
+    blocked_terms = status["blocked_terms"]
+    blocked_terms_text = ", ".join(blocked_terms) if blocked_terms else "none"
+    print(f"- blocked terms: {blocked_terms_text}")
     print(f"- hooks path configured: {status['configured_hooks_path'] or 'none'}")
     print(f"- user.name configured: {status['configured_author_name'] or 'none'}")
     print(f"- user.email configured: {status['configured_author_email'] or 'none'}")

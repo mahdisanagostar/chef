@@ -34,6 +34,15 @@ def run_command(func, **kwargs: object) -> tuple[int, str, str]:
     return code, stdout.getvalue(), stderr.getvalue()
 
 
+def init_git_repo(project: Path) -> None:
+    subprocess.run(
+        ["git", "init", str(project)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 class ChefCliTests(unittest.TestCase):
     def test_init_writes_managed_policy_indexes(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -571,7 +580,7 @@ class ChefCliTests(unittest.TestCase):
     def test_git_privacy_enable_installs_hook_guard_and_git_config(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+            init_git_repo(project)
 
             code, stdout, _ = run_command(
                 chef_cli.cmd_git_privacy_enable,
@@ -635,7 +644,7 @@ class ChefCliTests(unittest.TestCase):
     def test_git_privacy_enable_rejects_blocked_identity(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+            init_git_repo(project)
 
             code, _, stderr = run_command(
                 chef_cli.cmd_git_privacy_enable,
@@ -793,7 +802,7 @@ class ChefCliTests(unittest.TestCase):
     def test_verify_reports_git_privacy_guard_checks(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
-            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+            init_git_repo(project)
             code, _, _ = run_command(
                 chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
             )
