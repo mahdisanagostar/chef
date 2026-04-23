@@ -19,3 +19,4 @@ knowledge-vault/Graphify/graphify-out/wiki/**/*.md
 !knowledge-vault/Graphify/graphify-out/wiki/index.md
 !knowledge-vault/Graphify/graphify-out/GRAPH_REPORT.md
 src/chef/graphify-out/
+knowledge-vault/
