@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import importlib
 import json
-import subprocess
 import shutil
+import subprocess
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout

@@ -5,9 +5,8 @@ import json
 import sys
 from pathlib import Path
 
-from chef import external, scaffold
+from chef import external, git_privacy, scaffold
 from chef import graphify as graphify_ops
-from chef import git_privacy
 from chef import hosts as host_install
 from chef import packs as pack_ops
 from chef import policy as policy_ops
