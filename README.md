@@ -82,6 +82,12 @@ chef pack-profile --project . --profile full --offline
 chef graph-refresh --project . --execute
 ```
 
+If you want repo-local Git identity protection, enable it explicitly:
+
+```bash
+chef git-privacy-enable --project . --author-name "Your Name" --author-email "you@example.com"
+```
+
 ## What Appears in the Repo
 
 | Path | Purpose |
@@ -90,6 +96,7 @@ chef graph-refresh --project . --execute
 | `.codex/` | Project-local Codex runtime, shared skills, and routing helpers. |
 | `.codex-plugin/` | Codex plugin payload plus generated MCP registration. |
 | `.chef/` | Manifest, enabled packs, vendor cache, and install-state truth. |
+| `.chef/git-hooks/` | Repo-local Git hooks used by the privacy guard. |
 | `knowledge-vault/` | Obsidian-compatible vault used for notes, graph output, and retrieval. |
 
 ## Why This Structure Works

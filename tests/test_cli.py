@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import subprocess
 import shutil
 import sys
 import unittest
@@ -567,6 +568,84 @@ class ChefCliTests(unittest.TestCase):
             self.assertIn("chef-review-mcp", mcp_data["mcpServers"])
             self.assertIn("chef-security-mcp", mcp_data["mcpServers"])
 
+    def test_git_privacy_enable_installs_hook_guard_and_git_config(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+
+            code, stdout, _ = run_command(
+                chef_cli.cmd_git_privacy_enable,
+                project=str(project),
+                author_name="Mahdi Sanagostar",
+                author_email="mahdi@example.com",
+            )
+            self.assertEqual(code, 0, stdout)
+
+            state = json.loads((project / ".chef" / "git-privacy.json").read_text(encoding="utf-8"))
+            self.assertTrue(state["enabled"])
+            self.assertEqual(state["author_name"], "Mahdi Sanagostar")
+            self.assertEqual(state["author_email"], "mahdi@example.com")
+
+            hooks_path = subprocess.run(
+                ["git", "-C", str(project), "config", "--local", "--get", "core.hooksPath"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            self.assertEqual(hooks_path, str((project / ".chef" / "git-hooks").resolve()))
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "-C", str(project), "config", "--local", "--get", "user.name"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip(),
+                "Mahdi Sanagostar",
+            )
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "-C", str(project), "config", "--local", "--get", "user.email"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip(),
+                "mahdi@example.com",
+            )
+            self.assertIn("Git privacy guard enabled.", stdout)
+            self.assertTrue((project / ".chef" / "git-hooks" / "commit-msg").exists())
+            self.assertTrue((project / ".chef" / "git-hooks" / "pre-commit").exists())
+
+            code, stdout, _ = run_command(
+                chef_cli.cmd_git_privacy_status, project=str(project)
+            )
+            self.assertEqual(code, 0)
+            self.assertIn("- enabled: True", stdout)
+            self.assertIn("Mahdi Sanagostar", stdout)
+
+            (project / "notes.txt").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(project), "add", "notes.txt"], check=True)
+            commit_result = subprocess.run(
+                ["git", "-C", str(project), "commit", "-m", "Use Codex for fix"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(commit_result.returncode, 0)
+            self.assertIn("blocked commit message", commit_result.stderr)
+
+    def test_git_privacy_enable_rejects_blocked_identity(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+
+            code, _, stderr = run_command(
+                chef_cli.cmd_git_privacy_enable,
+                project=str(project),
+                author_name="Codex Agent",
+                author_email="codex@example.com",
+            )
+            self.assertEqual(code, 1)
+            self.assertIn("blocked term", stderr)
+
     def test_install_plan_reports_hosts_and_prune(self) -> None:
         with TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -710,6 +789,41 @@ class ChefCliTests(unittest.TestCase):
             code, _, stderr = run_command(chef_cli.cmd_verify, project=str(project))
             self.assertEqual(code, 1)
             self.assertIn("Invalid manifest", stderr)
+
+    def test_verify_reports_git_privacy_guard_checks(self) -> None:
+        with TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            subprocess.run(["git", "init", str(project)], check=True, capture_output=True, text=True)
+            code, _, _ = run_command(
+                chef_cli.cmd_init, project=str(project), host="codex", vault="new", vault_path=None
+            )
+            self.assertEqual(code, 0)
+            (project / ".chef" / "enabled-packs.json").write_text(
+                '{"enabled":[]}\n', encoding="utf-8"
+            )
+            with patch.object(
+                external_ops,
+                "sync_external_items",
+                return_value=external_ops.SyncResult([], [], [], []),
+            ):
+                code, _, _ = run_command(
+                    chef_cli.cmd_install, project=str(project), host="codex", offline=True
+                )
+            self.assertEqual(code, 0)
+            code, _, _ = run_command(
+                chef_cli.cmd_git_privacy_enable,
+                project=str(project),
+                author_name="Mahdi Sanagostar",
+                author_email="mahdi@example.com",
+            )
+            self.assertEqual(code, 0)
+
+            code, stdout, _ = run_command(chef_cli.cmd_verify, project=str(project), json=True)
+            self.assertEqual(code, 0)
+            checks = json.loads(stdout)["checks"]
+            self.assertTrue(checks["git_privacy_state"])
+            self.assertTrue(checks["git_privacy_commit_msg_hook"])
+            self.assertTrue(checks["git_privacy_pre_commit_hook"])
 
     def test_pack_status_reports_invalid_pack_definition_cleanly(self) -> None:
         with TemporaryDirectory() as tmp:

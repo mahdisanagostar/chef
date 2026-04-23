@@ -27,10 +27,12 @@ Chef ships one repository with one shared core and two isolated host adapters.
 
 - `.chef/chef.json` stores validated host and vault routing data.
 - `.chef/enabled-packs.json` stores selected pack ids.
+- `.chef/git-privacy.json` stores the optional Git privacy guard state.
 - `.chef/vendor/` stores cached upstream material snapshots.
 - `.claude/commands/`, `.claude/plugins/`, and `.claude/skills/` store project-local Claude runtime output.
 - `.codex/skills/` stores project-local Codex skills.
 - `.codex-plugin/` stores project-local Codex plugin and MCP config.
+- `.chef/git-hooks/` stores repo-local hooks when Git privacy guard is enabled.
 - Manifest schema details live in
   [docs/manifest-schema.md](manifest-schema.md)
 - Catalog schema details live in

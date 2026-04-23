@@ -21,6 +21,14 @@ def install_state_file(project: Path) -> Path:
     return chef_dir(project) / "install-state.json"
 
 
+def git_privacy_state_file(project: Path) -> Path:
+    return chef_dir(project) / "git-privacy.json"
+
+
+def git_privacy_hooks_dir(project: Path) -> Path:
+    return chef_dir(project) / "git-hooks"
+
+
 def claude_dir(project: Path) -> Path:
     return project / ".claude"
 

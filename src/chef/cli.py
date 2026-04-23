@@ -7,6 +7,7 @@ from pathlib import Path
 
 from chef import external, scaffold
 from chef import graphify as graphify_ops
+from chef import git_privacy
 from chef import hosts as host_install
 from chef import packs as pack_ops
 from chef import policy as policy_ops
@@ -186,6 +187,7 @@ def build_install_plan(project: Path, host: str, offline: bool) -> dict[str, obj
 def build_verify_report(project: Path, manifest: dict[str, str]) -> dict[str, object]:
     checks = scaffold.build_verify_checks(project, manifest)
     checks.update(policy_ops.build_policy_checks(project, manifest["host"]))
+    checks.update(git_privacy.build_git_privacy_checks(project))
     warnings: list[str] = []
 
     graph_state = graphify_ops.graph_status(project)
@@ -434,6 +436,56 @@ def cmd_publish_github(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_git_privacy_enable(args: argparse.Namespace) -> int:
+    project = detect_project(args)
+    try:
+        actions = git_privacy.enable_git_privacy(
+            project,
+            args.author_name,
+            args.author_email,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print("Git privacy guard enabled.")
+    print_section("Installed paths", actions)
+    return 0
+
+
+def cmd_git_privacy_disable(args: argparse.Namespace) -> int:
+    project = detect_project(args)
+    try:
+        actions = git_privacy.disable_git_privacy(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print("Git privacy guard disabled.")
+    print_section("Removed paths", actions)
+    return 0
+
+
+def cmd_git_privacy_status(args: argparse.Namespace) -> int:
+    project = detect_project(args)
+    try:
+        status = git_privacy.status_git_privacy(project)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print("Git privacy guard:")
+    print(f"- enabled: {status['enabled']}")
+    print(f"- hooks path: {status['hooks_path']}")
+    print(f"- author name: {status['author_name'] or 'none'}")
+    print(f"- author email: {status['author_email'] or 'none'}")
+    print(f"- blocked terms: {', '.join(status['blocked_terms']) if status['blocked_terms'] else 'none'}")
+    print(f"- hooks path configured: {status['configured_hooks_path'] or 'none'}")
+    print(f"- user.name configured: {status['configured_author_name'] or 'none'}")
+    print(f"- user.email configured: {status['configured_author_email'] or 'none'}")
+    print(
+        f"- user.useConfigOnly configured: {status['configured_use_config_only'] or 'none'}"
+    )
+    return 0
+
+
 def cmd_pack_enable(args: argparse.Namespace) -> int:
     project = detect_project(args)
     try:
@@ -539,6 +591,20 @@ def build_parser() -> argparse.ArgumentParser:
     publish_parser.add_argument("--owner", required=True)
     publish_parser.add_argument("--repo", default="chef")
     publish_parser.set_defaults(func=cmd_publish_github)
+
+    privacy_enable_parser = sub.add_parser("git-privacy-enable")
+    privacy_enable_parser.add_argument("--project", required=True)
+    privacy_enable_parser.add_argument("--author-name", required=True)
+    privacy_enable_parser.add_argument("--author-email", required=True)
+    privacy_enable_parser.set_defaults(func=cmd_git_privacy_enable)
+
+    privacy_disable_parser = sub.add_parser("git-privacy-disable")
+    privacy_disable_parser.add_argument("--project", required=True)
+    privacy_disable_parser.set_defaults(func=cmd_git_privacy_disable)
+
+    privacy_status_parser = sub.add_parser("git-privacy-status")
+    privacy_status_parser.add_argument("--project", required=True)
+    privacy_status_parser.set_defaults(func=cmd_git_privacy_status)
 
     enable_parser = sub.add_parser("pack-enable")
     enable_parser.add_argument("--project", required=True)

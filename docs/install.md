@@ -77,6 +77,17 @@ chef pack-profile --project . --profile full --offline
 The `media` pack includes `talkcraft` for presentation strategy and rehearsal support.
 The `orchestration` pack groups `gstack`, `massgen`, `ruflo`, and `superpowers`.
 
+Git privacy guard:
+
+```bash
+chef git-privacy-enable --project . --author-name "Your Name" --author-email "you@example.com"
+chef git-privacy-status --project .
+chef git-privacy-disable --project .
+```
+
+The guard writes repo-local hooks under `.chef/git-hooks/`, sets local Git identity,
+and blocks AI agent names from commit messages and author metadata.
+
 Local wrapper without editable install:
 
 ```bash
